@@ -7,7 +7,7 @@
  * 
  */
 
-#include "substituidor.h"
+#include "util.h"
 
 void referencia_pagina(int i)
 {
@@ -21,4 +21,5 @@ void referencia_pagina(int i)
 			page_fautls_total++;
 		/// se não
 			// substituição
+			num_substituicoes++;
 }
