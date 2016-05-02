@@ -1,7 +1,7 @@
 COMPILADOR = gcc
 ARQUIVOS = alocador.c shutdown.c substituidor.c usuario.c
 OBJETOS = alocador.o shutdown.o substituidor.o usuario.o
-DIRLIB = alocador.h substituidor.h util.h
+DIRLIB = alocador.h shutdown.h util.h
 
 all: linkar compilar limpar
 

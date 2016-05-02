@@ -8,11 +8,14 @@
  */
 
 #include "util.h"
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <unistd.h>
 #include <stdio.h>
 
 void referencia_pagina(int i)
 {
-	printf("eita\n");
 	// tentar reservar page frame pra pag i
 	/// se pág i já tá lá
 		// retorna ela
@@ -20,8 +23,11 @@ void referencia_pagina(int i)
 		/// se tiver espaço na frame
 			// mapear página numa page frame livre aleatória
 			// sinalizar que houve page fault signal unix 
-			page_fautls_total++;
+			int pid = getpid();
+			printf("\t pid : %d", pid);
+		    *(page_faults[pid]) = *(page_faults[pid]) + 1;
+			(*page_fautls_total)++;
 		/// se não
 			// substituição
-			num_substituicoes++;
+			(*num_substituicoes)++;
 }
