@@ -14,13 +14,6 @@
 #include <unistd.h>
 #include <stdio.h>
 
-void referencia_pagina(int i) 
-{
-	printf("\t %d\n", i);
-}
-
-void shutdown() {}
-
 int main ()
 {
 	int estado, i;
@@ -30,8 +23,8 @@ int main ()
 	// Inicializando variaveis compartilhadas
 	num_substituicoes = 0;
 	page_fautls_total = 0;
-	pagina = "";
-	tempo_de_referencia = "";
+	pagina = "p";
+	tempo_de_referencia = "t";
 	for (i = 0; i < NUMERO_PROCESSOS; i++)
 		page_faults[i] = 0;
 	
@@ -47,7 +40,7 @@ int main ()
 		// Processo filho
 		if (pid == 0)
 		{
-			printf("[%d] pid filho = %d \t seu pai = %d\n", i, getpid(), getppid());
+			printf("pid filho = %d \t seu pai = %d\n", getpid(), getppid());
 			referencia_pagina(0);
 			referencia_pagina(1);
 			referencia_pagina(2);
@@ -57,7 +50,7 @@ int main ()
 	
 	// Processo pai
 	while ((pid = wait(&estado)) > 0) // Precisa esperar todos os filhos
-		printf("Estado exit de %d foi %d\n", (int)pid, estado);
+		printf("\tEstado exit de %d foi %d\n", (int)pid, estado);
 		
 	shutdown();
 	_exit(0);

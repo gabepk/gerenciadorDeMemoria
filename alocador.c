@@ -8,9 +8,11 @@
  */
 
 #include "util.h"
+#include <stdio.h>
 
 void referencia_pagina(int i)
 {
+	printf("eita\n");
 	// tentar reservar page frame pra pag i
 	/// se pág i já tá lá
 		// retorna ela

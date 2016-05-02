@@ -1,7 +1,15 @@
-DEPS = alocador.h substituidor.h util.h
+COMPILADOR = gcc
+ARQUIVOS = alocador.c shutdown.c substituidor.c usuario.c
+OBJETOS = alocador.o shutdown.o substituidor.o usuario.o
+DIRLIB = alocador.h substituidor.h util.h
 
-trabSO: alocador.c shutdown.c substituidor.c usuario.c
-     gcc  -o trabSO alocador.c shutdown.c substituidor.c usuario.c
+all: linkar compilar limpar
 
-shutdown.o: shutdown.c
-    gcc -Wall -c shutdown.c
+linkar: $(ARQUIVOS)
+	$(COMPILADOR) -c $(ARQUIVOS) $(DIRLIB)
+
+compilar: $(ARQUIVOS) 
+	$(COMPILADOR) $(OBJETOS) $(DIRLIB) -o trabso
+
+limpar:
+	rm -f *.o
