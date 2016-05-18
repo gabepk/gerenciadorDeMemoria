@@ -1,99 +1,83 @@
-/** Universidade de Brasilia - CIC
- *  Sistemas Operacionais - professora Alba Cristina
- *  Gabriella de Oliveira Esteves - 110118995
- * 
- *  Ubuntu - versao 14.04 LTS
- *  GCC - versao 4.8.4
- * 
- */
-
-#include "util.h"
-#include "alocador.h"
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <unistd.h>
 #include <stdio.h>
+#include <signal.h>
+#include <string.h>
 
-/// TDDO : diminuir tamanho das variaveis
+#define TAMANHO_LINHA 100
 
-int id_page_faults_total, *page_faults_total;
-int id_num_substituicoes, *num_substituicoes;
-int id_pagina, *(pagina[NUMERO_FRAMES]);
-int id_tempo_de_referencia, *(tempo_de_referencia[NUMERO_FRAMES]);
-int id_page_faults, *(page_faults[NUMERO_PROCESSOS]);
-
-void init_variaveis_compartilhadas()
+typedef struct mensagem
 {
-	id_page_faults_total = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | 0x1FF);
-	id_num_substituicoes = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | 0x1FF);
-	id_pagina = shmget(IPC_PRIVATE, sizeof(int)*NUMERO_FRAMES, IPC_CREAT | 0x1FF);
-	id_tempo_de_referencia = shmget(IPC_PRIVATE, sizeof(int)*NUMERO_FRAMES, IPC_CREAT | 0x1FF);
-	id_page_faults = shmget(IPC_PRIVATE, sizeof(int)*NUMERO_PROCESSOS, IPC_CREAT | 0x1FF);
+	long pid;
+	char *pagina;
+};
+
+void shutdown_usuario () {
+	//exit(1);
+	return;
 }
 
-void attach_variaveis_compartilhadas()
-{
-	page_faults_total = (int *) shmat(id_page_faults_total, (char *) 0, 0);
-	num_substituicoes = (int *) shmat(id_num_substituicoes, (char *) 0, 0);
-	pagina = (int **) shmat(id_pagina, (char *) 0, 0);
-	tempo_de_referencia = (int **) shmat(id_tempo_de_referencia, (char *) 0, 0);
-	page_faults = (int **) shmat(id_page_faults, (char *) 0, 0);
-}
-
-void deleta_variaveis_compartilhadas()
-{
-	shmdt(id_page_faults);
-	shmdt(id_tempo_de_referencia);
-	shmdt(id_pagina);
-	shmdt(id_num_substituicoes);
-	shmdt(id_page_faults_total);
-	
-	shmctl(id_page_faults, IPC_RMID, NULL);
-	shmctl(id_tempo_de_referencia, IPC_RMID, NULL);
-	shmctl(id_pagina, IPC_RMID, NULL);
-	shmctl(id_num_substituicoes, IPC_RMID, NULL);
-	shmctl(id_page_faults_total, IPC_RMID, NULL);
-}
-
-int main ()
-{
-	int estado, i;
-	pid_t pid;
-	printf("pid pai = %d\n", getpid());
-	
-	init_variaveis_compartilhadas();
-	attach_variaveis_compartilhadas();
-	
-	// Criacao de processos
-	for (i = 0; i < NUMERO_PROCESSOS; i++)
+int main (int argc, char *argv[]) {
+	//signal(SIGUSR1, shutdown_usuario);
+	if (argc > 1)
 	{
-		if ((pid = fork()) < 0)
+		FILE *fp;
+		fp = fopen(argv[1], "r");
+		if (fp != NULL)
 		{
-			printf ("Erro ao criar processo.\n");
-			_exit(1); // Aborta
+			int i = 0;
+			struct mensagem msg_fila_1;
+			struct mensagem msg_fila_2;
+			char linha[TAMANHO_LINHA], *token;
+			char *paginas[TAMANHO_LINHA]; // mudar para dinamico
+
+			fgets(linha, TAMANHO_LINHA, fp);
+			token = strtok(linha, ",");
+			while (token != NULL) {
+				paginas[i] = token;
+				token = strtok(NULL, ","); // ve se funciona
+				//printf("paginas[%d] = %s\n", i, paginas[i]);
+				i++;
+			}
+			paginas[i] = "\n";
+
+			// Cria e obtem filas de mensagens
+			if ( (int fila_1 = msgget(0x126785, IPC_CREAT|0777)) < 0); // referencia_pagina
+			{
+				printf("Erro na criação da fila 1\n");
+				exit(1);
+			}
+			if ( (int fila_2 = msgget(0x118995, 0777)) < 0); // recebe resposta
+			{
+				printf("Erro na obtencao da fila 2\n");
+				exit(1);
+			}
+			
+			// Envia paginas e recebe respostas
+			msg.pid = getpid();
+			i = 0;
+			while (paginas[i] != "\n") {
+				msg.pagina = paginas[i];
+				
+				if ( msgsnd(fila_1, &msg_fila_1, sizeof(msg_fila_1), 0) < 0)
+				{
+					printf("Erro no envio da pagina %s do processo %d\n", msg.pagina, msg.pid);
+					exit(1);
+				}
+				// block
+				// msgrcv(fila_2, msg_fila_2, sizeof(msg_fila_2), 0); // verificar se msg.pid é igual ao pid dele
+				// unblock
+				i++;
+			}
+
+			fclose(fp);
 		}
-		
-		// Processo filho
-		if (pid == 0)
+		else
 		{
-			printf("pid filho = %d \t seu pai = %d\n", getpid(), getppid());
-			attach_variaveis_compartilhadas();
-			referencia_pagina(0);
-			referencia_pagina(1);
-			referencia_pagina(2);
-			_exit(0);
+			printf("Erro na abertura do arquivo.\n");
 		}
 	}
-	
-	// Processo pai
-	while ((pid = wait(&estado)) > 0) // Precisa esperar todos os filhos
-		printf("\tEstado exit de %d foi %d %s\n", (int)pid, estado, estado == 139 ? "segmetation fault" : "");
-	
-	deleta_variaveis_compartilhadas();
-	shutdown();
-	_exit(0);
-	
+	else
+	{
+		printf("Falta arquivo .txt de entrada.\n");
+	}
 	return 0;
 }
