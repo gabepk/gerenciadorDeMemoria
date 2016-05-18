@@ -8,7 +8,8 @@
  *
  */
 
- #include <signal.h>
+#include <errno.h>
+#include <signal.h>
 
 void shutdown_substituidor () {
 	exit(1);
