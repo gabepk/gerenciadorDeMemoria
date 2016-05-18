@@ -1,3 +1,13 @@
+/** Universidade de Brasilia - CIC
+ *  Sistemas Operacionais - professora Alba Cristina
+ *  Gabriella de Oliveira Esteves - 110118995
+ *  Naiara Watanabe - 090126785
+ *
+ *  Ubuntu - versao 14.04 LTS
+ *  GCC - versao 4.8.4
+ *
+ */
+
 #include <stdio.h>
 #include <signal.h>
 #include <string.h>
@@ -42,7 +52,7 @@ int main (int argc, char *argv[]) {
 			// Cria e obtem filas de mensagens
 			if ( (int fila_1 = msgget(0x126785, IPC_CREAT|0777)) < 0); // referencia_pagina
 			{
-				printf("Erro na criação da fila 1\n");
+				printf("Erro na criacao da fila 1\n");
 				exit(1);
 			}
 			if ( (int fila_2 = msgget(0x118995, 0777)) < 0); // recebe resposta
