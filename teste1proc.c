@@ -46,17 +46,13 @@ void imprime_resultado() {
 	printf("\t Pid \t Pagina \t Tempo de referecia\n");
 	for (i = 0; i < NUMERO_FRAMES; i++)
 	{
-		// Usar tab_invertida.livre
-
 		if (! tab_invertida->livre[i])
-			printf("\t %d \t %s \t %d\n", tab_invertida->pid[i], tab_invertida->pagina[i], tab_invertida->tempo_de_referencia[i]);
+			printf("\t %d \t %s \t\t %d\n", tab_invertida->pid[i], tab_invertida->pagina[i], tab_invertida->tempo_de_referencia[i]);
 		else printf("\t %d \t Livre\n", tab_invertida->pid[i]);
 	}
-
-	//exclui_estruturas_compartilhadas();
 }
 
-void substituir_frame() {
+void substituicao_de_frames() {
 	int i, indice, tempo_maximo;
 	int frames_livres = 0;
 
@@ -65,7 +61,7 @@ void substituir_frame() {
 		if (tab_invertida->livre[i]) frames_livres++;
 	}
 
-	// Armazena indice da tabela cujo tempo de referencia a pagina eh o MAIOR
+	// Armazena indice da tabela cujo tempo de referencia ah pagina eh o MAIOR
 	while (frames_livres <= NUMERO_FRAMES - OCUPACAO_OK) {
 		tempo_maximo = 0;
 		for (i = 0; i < NUMERO_FRAMES; i++) {
@@ -91,48 +87,50 @@ void aloca_frames(char *paginas[]) {
 	for (i = 0; i < 22; i++)
 	{
 		page_fault = true;
-		// Verifica se pagina esta na tabela
+
+		// Verifica se pagina esta na tabela de frames
 		for (j = 0; j < NUMERO_FRAMES; j++)
 		{
 			if (*(paginas[i]) == *(tab_invertida->pagina[j]))
 			{
-				printf(" > Pagina %s ENCONTRADA no indice %d \n", paginas[i], j);
-				tab_invertida->tempo_de_referencia[j] = 0; // Usado mais recentemente
+				printf("Pagina %s ENCONTRADA no indice %d \n", paginas[i], j);
+				tab_invertida->tempo_de_referencia[j] = 0; // Marca como usado mais recentemente
 				page_fault = false;
 				break;
 			}
 		}
 
+		// Se nao estah, houve page fault
 		if (page_fault) {
-			printf(" << Ocorreu page fault >>\n");
+			printf("Page Fault.\n \b");
 			numero_page_faults++;
 
 			if (ocupacao_tabela >= MAX_OCUPACAO)
 			{
-				printf(" << Nao tem espaco -> Substituir >>\n");
+				printf("Nao tem espaco. Libera Frame.\n");
 				numero_exec_substituicao++;
-				substituir_frame();
+				substituicao_de_frames();
 			}
 
 			for (j = 0; j < NUMERO_FRAMES; j++)
 			{
+				// Se frame estiver livre, insere nova pagina lah
 				if (tab_invertida->livre[j])
 				{
-					printf(" > Pagina %s INSERIDA no indice %d \n", paginas[i], j);
+					printf("Pagina %s INSERIDA no indice %d \n", paginas[i], j);
 					tab_invertida->livre[j] = false;
 					tab_invertida->pagina[j] = paginas[i];
-					tab_invertida->tempo_de_referencia[j] = 0; // Usado mais recentemente
+					tab_invertida->tempo_de_referencia[j] = 0; // Marca como usado mais recentemente
 					ocupacao_tabela++;
 					break;
 				}
 			}
 		}
 
-		for (j = 0; j < NUMERO_FRAMES; j++) { // Incrementa tempo de referencia de todas as paginas
+		// Incrementa tempo de referencia de todas as paginas
+		for (j = 0; j < NUMERO_FRAMES; j++) {
 			tab_invertida->tempo_de_referencia[j]++;
 		}
-
-		imprime_resultado();
 				
 	}
 }
@@ -172,7 +170,6 @@ int main (int argc, char *argv[]) {
 			
 			inicializa_tabela();
 			aloca_frames(paginas);
-			printf("\t Tabela completa \n");
 			imprime_resultado();
 
 			fclose(fp);
