@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdio.h>
 
+// Criar um .h soh pra isso, pra nao ter que botar em memoria compartilhada o "NUMERO_FRAMES"
 #define TAMANHO_LINHA 100
 #define NUMERO_FRAMES 10 // 5 page frames existem
 #define MAX_OCUPACAO 9 // Se 9 frames existirem, ocorre substituicao
@@ -81,10 +82,11 @@ void substituicao_de_frames() {
 
 }
 
-void aloca_frames(char *paginas[]) {
+void aloca_frames(char *paginas[], int num_paginas) {
 	int i, j, ocupacao_tabela = 0;
 	bool page_fault;
-	for (i = 0; i < 22; i++)
+
+	for (i = 0; i < num_paginas; i++)
 	{
 		page_fault = true;
 
@@ -169,7 +171,7 @@ int main (int argc, char *argv[]) {
 			paginas[i] = "\n";
 			
 			inicializa_tabela();
-			aloca_frames(paginas);
+			aloca_frames(paginas, i);
 			imprime_resultado();
 
 			fclose(fp);
