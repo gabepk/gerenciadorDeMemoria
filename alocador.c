@@ -27,7 +27,7 @@
 typedef struct mensagem
 {
 	long pid; // TODO: nao eh necessariamente um pid 
-	char *pagina; // pagina[30];
+	char pagina[10]; // pagina[30];
 } mensagem;
 typedef struct tabela
 {
@@ -154,7 +154,7 @@ void shutdown_alocador()
 	exit(1);
 }
 
-long aloca_frame(mensagem msg)
+bool aloca_frame(mensagem *msg)
 {
 	// tentar reservar page frame pra pag i
 	/// se pág i já tá lá
@@ -163,13 +163,12 @@ long aloca_frame(mensagem msg)
 		/// se tiver espaço na frame
 			// mapear página numa page frame livre aleatória
 			// sinalizar que houve page fault signal unix
-			printf("\t pid : %ld", msg.pid);
-		    numero_page_faults[msg.pid]++;
+		    // numero_page_faults[msg->pid]++;
 		/// se não
 			// substituição
 			// kill (_, SIGUSR2);
 			numero_exec_substituicao++;
-	return 1;
+	return true;
 }
 
 int main ()
@@ -187,16 +186,27 @@ int main ()
 	//ptr_tabela = &tab_invertida;
 	printf("Cheguei aqui.\n");
 	while (1) {
+		printf("1.\n");
 		if ((msgrcv(fila_1, &msg_fila_1, sizeof(msg_fila_1)-sizeof(long), 0, 0)) < 0)
 		{
 			printf("Erro na obtencao da mensagem na fila 1\n");
 			exit(1);
 		}
-		printf("Mensagem recebida: %ld %s \n", msg_fila_1.pid, msg_fila_1.pagina);
-		printf("Recebeu\n");
 
-		msg_fila_2.pid = aloca_frame(msg_fila_1);
-		//msg_fila_2.pagina = "";
+		//printf("Mensagem recebida: %ld %s \n", msg_fila_1.pid, msg_fila_1.pagina);
+		if (!(&msg_fila_1)) {
+			printf("Deu ruim\n");
+		}
+		printf("Deu bom\n");
+		printf("Pid: %ld e Pag = %s \n", msg_fila_1.pid, msg_fila_1.pagina);
+
+		msg_fila_2.pid = msg_fila_1.pid;
+		if(aloca_frame(&msg_fila_1)) {
+			msg_fila_2.pagina[0] = 's';
+		}
+		else {
+			msg_fila_2.pagina[0] = 'n';
+		}
 
 		if ((msgsnd(fila_2, &msg_fila_2, sizeof(msg_fila_2)-sizeof(long), 0)) < 0)
 		{

@@ -18,7 +18,7 @@
 typedef struct mensagem
 {
 	long pid;
-	char *pagina;
+	char pagina[10];
 } mensagem;
 
 void shutdown_usuario () {
@@ -40,7 +40,7 @@ int main (int argc, char *argv[]) {
 		{
 			int i = 0;
 			int fila_1, fila_2;
-			mensagem msg_1, msg_2;
+			mensagem msg_fila_1, msg_fila_2;
 			char linha[TAMANHO_LINHA], *token;
 			char *paginas[TAMANHO_LINHA]; // mudar para dinamico
 
@@ -68,28 +68,33 @@ int main (int argc, char *argv[]) {
 			// Envia paginas e recebe respostas
 			printf("fila_1 = %d\n", fila_1);
 			printf("fila_2 = %d\n", fila_2);
-			msg_1.pid = getpid();
-			printf("pid = %ld\n", msg_1.pid);
+			msg_fila_1.pid = getpid();
+			printf("pid = %ld\n", msg_fila_1.pid);
 			i = 0;
 			while (paginas[i] != "\n") { // TODO usar string compare
-				msg_1.pagina = paginas[i];
+				int j = 0;
+				while(paginas[j] != "\n") {
+					msg_fila_1.pagina[j] = paginas[i][j];
+					j++;
+				}
 			
-				if ( msgsnd(fila_1, &msg_1, sizeof(msg_1)-sizeof(long), 0) < 0)
+				if ( msgsnd(fila_1, &msg_fila_1, sizeof(msg_fila_1)-sizeof(long), 0) < 0)
 				{
-					printf("Erro no envio da pagina %s do processo %ld\n", msg_1.pagina, msg_1.pid);
+					printf("Erro no envio da pagina %s do processo %ld\n", msg_fila_1.pagina, msg_fila_1.pid);
 					exit(1);
 				}
 				
-				printf("Enviou paginas[%d] = %s\n", i, paginas[i]);
-				printf("Mensagem enviada: %ld %s\n", msg_1.pid, msg_1.pagina);
-				/*if ( msgrcv(fila_2, &msg_2, sizeof(msg_2), 0, 0) < 0) 
+				printf("Mensagem enviada: %ld %s\n", msg_fila_1.pid, msg_fila_1.pagina);
+				sleep(3);
+				
+				if ( msgrcv(fila_2, &msg_fila_2, sizeof(msg_fila_2)-sizeof(long), 0, 0) < 0)
 				{
-					printf("Erro no recebimento da fila 2.\n");
+					printf("Erro na obtencao da mensagem na fila 2\n");
 					exit(1);
-				}*/
-				//printf("mensagem recebida = %ld %s\n", msg_2.pid, msg_2.pagina);
+				}
+				//printf("mensagem recebida = %ld %s\n", msg_fila_2.pid, msg_fila_2.pagina);
 				// block
-				// msgrcv(fila_2, msg_2, sizeof(msg_2), 0); // verificar se msg_2.pid é igual ao pid dele
+				// msgrcv(fila_2, msg_fila_2, sizeof(msg_fila_2), 0); // verificar se msg_fila_2.pid é igual ao pid dele
 				// unblock
 				i++;
 			}
