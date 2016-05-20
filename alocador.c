@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #define NUMERO_USUARIOS 4 // 5 usuarios
 #define NUMERO_FRAMES 10 // 5 page frames existem
@@ -26,7 +27,7 @@
 typedef struct mensagem
 {
 	long pid; // TODO: nao eh necessariamente um pid 
-	char *pagina;
+	char *pagina; // pagina[30];
 } mensagem;
 typedef struct tabela
 {
@@ -39,13 +40,13 @@ typedef struct tabela
 struct sembuf op[2];
 int id_sem;
 int id_mem;
-int fila_1, fila_2;
+int fila_1, fila_2, fila_dummy;
 
 int numero_page_faults[NUMERO_USUARIOS];
 int numero_page_faults_total;
 int numero_exec_substituicao;
 
-int Psem()
+void Psem()
 {
 	op[0].sem_num = 0;
 	op[0].sem_op = 0;
@@ -55,44 +56,49 @@ int Psem()
 	op[1].sem_flg = 0; // Semaforo blocante
 	if (semop(id_sem, op, 2) < 0)
 		printf("Erro %d\n", errno);
+	return;
 }
 
-int Vsem()
+void Vsem()
 {
 	op[0].sem_num = 0;
 	op[0].sem_op = -1;
 	op[0].sem_flg = 0;
 	if (semop(id_sem, op, 1) < 0)
 		printf("Erro %d\n", errno);
+	return;
 }
 
 void cria_estruturas_compartilhadas()
 {
 	// Cria semaforo que sera usado para bloquear escrita na tabela invertida
-	if ((id_sem = semget(0x89950, 1, IPC_CREAT|0777)) < 0)
+	if ((id_sem = semget(0x89950, 1, IPC_CREAT|0x1FF)) < 0)
 	{
 		printf("Erro na criacao do semaforo\n");
-		//exit(1);
+		exit(1);
 	}
-
 	// Cria filas de mensagens
-	if ((fila_1 = msgget(0x126785, IPC_CREAT|0777)) < 0) // recebe referencia_pagina
+	if ((fila_1 = msgget(0x1BC, IPC_CREAT|0x1FF)) < 0) // recebe referencia_pagina
 	{
 		printf("Erro na obtencao da fila 1\n");
-		//exit(1);
+		exit(1);
 	}
-	if ( (fila_2 = msgget(0x118995, IPC_CREAT|0777)) < 0) // envia resposta
+	if ( (fila_2 = msgget(0x118995, IPC_CREAT|0x1FF)) < 0) // envia resposta
 	{
 		printf("Erro na criacao da fila 2\n");
-		//exit(1);
+		exit(1);
 	}
-
 	// Cria memoria compartilhada
-	if ((id_mem = shmget(IPC_PRIVATE, sizeof(tabela), IPC_CREAT|0777)) < 0)
+	if ((id_mem = shmget(0x89951, sizeof(tabela), IPC_CREAT|0x1FF)) < 0)
 	{
 		printf("erro na criacao da memoria compartilhada\n");
-		//exit(1);
+		exit(1);
 	}
+
+	printf("id_sem = %d\n", id_sem);	
+	printf("fila_1 = %d\n", fila_1);
+	printf("fila_2 = %d\n", fila_2);
+	printf("id_mem = %d\n", id_mem);
 }
 
 void exclui_estruturas_compartilhadas()
@@ -101,26 +107,24 @@ void exclui_estruturas_compartilhadas()
 	if (semctl(id_sem, 1, IPC_RMID, NULL) < 0)
 	{
 		printf("Erro na exclusao do semaforo\n");
-		//exit(1);
+		exit(1);
 	}
-
 	// Exclui filas de mensagens
 	if (msgctl(fila_1, IPC_RMID, NULL) < 0) // recebe referencia_pagina
 	{
 		printf("Erro na exclusao da fila 1\n");
-		//exit(1);
+		exit(1);
 	}
 	if (msgctl(fila_2, IPC_RMID, NULL) < 0) // envia resposta
 	{
 		printf("Erro na exclusao da fila 2\n");
-		//exit(1);
+		exit(1);
 	}
-
 	// Exclui memoria compartilhada
 	if (shmctl(id_mem, IPC_RMID, NULL) < 0)
 	{
 		printf("erro na exclusao da memoria compartilhada\n");
-		//exit(1);
+		exit(1);
 	}
 }
 
@@ -147,9 +151,7 @@ void shutdown_alocador()
 	}
 
 	exclui_estruturas_compartilhadas();
-
-	//exit(1);
-
+	exit(1);
 }
 
 long aloca_frame(mensagem msg)
@@ -174,32 +176,32 @@ int main ()
 {
 	struct mensagem msg_fila_1;
 	struct mensagem msg_fila_2;
-	tabela tab_invertida;
 	tabela *ptr_tabela;
+
 	signal(SIGUSR1, shutdown_alocador);
 
 	cria_estruturas_compartilhadas();
 
 	// Aloca tabela na memória compartilhada
 	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0);
-	ptr_tabela = &tab_invertida;
-
+	//ptr_tabela = &tab_invertida;
+	printf("Cheguei aqui.\n");
 	while (1) {
-		if (msgrcv(fila_1, msg_fila_1, sizeof(msg_fila_1), 0) < 0)
+		if ((msgrcv(fila_1, &msg_fila_1, sizeof(msg_fila_1)-sizeof(long), 0, 0)) < 0)
 		{
 			printf("Erro na obtencao da mensagem na fila 1\n");
-			//exit(1);
+			exit(1);
 		}
-
+		printf("Mensagem recebida: %ld %s \n", msg_fila_1.pid, msg_fila_1.pagina);
 		printf("Recebeu\n");
 
 		msg_fila_2.pid = aloca_frame(msg_fila_1);
-		msg_fila_2.pagina = "";
+		//msg_fila_2.pagina = "";
 
-		if (msgrcv(fila_2, msg_fila_2, sizeof(msg_fila_2), 0) < 0)
+		if ((msgsnd(fila_2, &msg_fila_2, sizeof(msg_fila_2)-sizeof(long), 0)) < 0)
 		{
 			printf("Erro no envio de mensagem na fila 2\n");
-			//exit(1);
+			exit(1);
 		}
 	}
 

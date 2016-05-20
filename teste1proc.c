@@ -31,7 +31,7 @@ struct tabela
 int numero_page_faults;
 int numero_page_faults_total;
 int numero_exec_substituicao;
-struct tabela *tab_invertida;
+struct tabela *ptr_tabela;
 
 void imprime_resultado() {
 	int i;
@@ -47,10 +47,23 @@ void imprime_resultado() {
 	printf("\t Pid \t Pagina \t Tempo de referecia\n");
 	for (i = 0; i < NUMERO_FRAMES; i++)
 	{
-		if (! tab_invertida->livre[i])
-			printf("\t %d \t %s \t\t %d\n", tab_invertida->pid[i], tab_invertida->pagina[i], tab_invertida->tempo_de_referencia[i]);
-		else printf("\t %d \t Livre\n", tab_invertida->pid[i]);
+		if (! ptr_tabela->livre[i])
+			printf("\t %d \t %s \t\t %d\n", ptr_tabela->pid[i], ptr_tabela->pagina[i], ptr_tabela->tempo_de_referencia[i]);
+		else printf("\t %d \t Livre\n", ptr_tabela->pid[i]);
 	}
+}
+
+void inicializa_tabela() {
+	int i;
+	ptr_tabela = malloc(sizeof(struct tabela));
+
+	for (i = 0; i < NUMERO_FRAMES; i++) {
+		ptr_tabela->pid[i] = 0;
+		ptr_tabela->livre[i] = true;
+		ptr_tabela->pagina[i] = "-";
+		ptr_tabela->tempo_de_referencia[i] = -9999;
+	}
+
 }
 
 void substituicao_de_frames() {
@@ -59,25 +72,25 @@ void substituicao_de_frames() {
 
 	// Conta numero de frames livres
 	for (i = 0; i < NUMERO_FRAMES; i++) {
-		if (tab_invertida->livre[i]) frames_livres++;
+		if (ptr_tabela->livre[i]) frames_livres++;
 	}
 
 	// Armazena indice da tabela cujo tempo de referencia ah pagina eh o MAIOR
 	while (frames_livres <= NUMERO_FRAMES - OCUPACAO_OK) {
 		tempo_maximo = 0;
 		for (i = 0; i < NUMERO_FRAMES; i++) {
-			if (tab_invertida->tempo_de_referencia[i] > tempo_maximo) {
-				tempo_maximo = tab_invertida->tempo_de_referencia[i];
+			if (ptr_tabela->tempo_de_referencia[i] > tempo_maximo) {
+				tempo_maximo = ptr_tabela->tempo_de_referencia[i];
 				indice = i;
 			}
 		}
 
 		printf("Liberou frame %d\n", indice);
 		frames_livres++;
-		tab_invertida->pid[indice] = 0;
-		tab_invertida->livre[indice] = true;
-		tab_invertida->pagina[indice] = "-";
-		tab_invertida->tempo_de_referencia[indice] = -9999;
+		ptr_tabela->pid[indice] = 0;
+		ptr_tabela->livre[indice] = true;
+		ptr_tabela->pagina[indice] = "-";
+		ptr_tabela->tempo_de_referencia[indice] = -9999;
 	}
 
 }
@@ -86,6 +99,10 @@ void aloca_frames(char *paginas[], int num_paginas) {
 	int i, j, ocupacao_tabela = 0;
 	bool page_fault;
 
+	// Block com Psem() - tem q ter 2 semaforos
+
+	inicializa_tabela();
+
 	for (i = 0; i < num_paginas; i++)
 	{
 		page_fault = true;
@@ -93,10 +110,10 @@ void aloca_frames(char *paginas[], int num_paginas) {
 		// Verifica se pagina esta na tabela de frames
 		for (j = 0; j < NUMERO_FRAMES; j++)
 		{
-			if (*(paginas[i]) == *(tab_invertida->pagina[j]))
+			if (*(paginas[i]) == *(ptr_tabela->pagina[j]))
 			{
 				printf("Pagina %s ENCONTRADA no indice %d \n", paginas[i], j);
-				tab_invertida->tempo_de_referencia[j] = 0; // Marca como usado mais recentemente
+				ptr_tabela->tempo_de_referencia[j] = 0; // Marca como usado mais recentemente
 				page_fault = false;
 				break;
 			}
@@ -117,12 +134,12 @@ void aloca_frames(char *paginas[], int num_paginas) {
 			for (j = 0; j < NUMERO_FRAMES; j++)
 			{
 				// Se frame estiver livre, insere nova pagina lah
-				if (tab_invertida->livre[j])
+				if (ptr_tabela->livre[j])
 				{
 					printf("Pagina %s INSERIDA no indice %d \n", paginas[i], j);
-					tab_invertida->livre[j] = false;
-					tab_invertida->pagina[j] = paginas[i];
-					tab_invertida->tempo_de_referencia[j] = 0; // Marca como usado mais recentemente
+					ptr_tabela->livre[j] = false;
+					ptr_tabela->pagina[j] = paginas[i];
+					ptr_tabela->tempo_de_referencia[j] = 0; // Marca como usado mais recentemente
 					ocupacao_tabela++;
 					break;
 				}
@@ -131,23 +148,10 @@ void aloca_frames(char *paginas[], int num_paginas) {
 
 		// Incrementa tempo de referencia de todas as paginas
 		for (j = 0; j < NUMERO_FRAMES; j++) {
-			tab_invertida->tempo_de_referencia[j]++;
+			ptr_tabela->tempo_de_referencia[j]++;
 		}
 				
 	}
-}
-
-void inicializa_tabela() {
-	int i;
-	tab_invertida = malloc(sizeof(struct tabela));
-
-	for (i = 0; i < NUMERO_FRAMES; i++) {
-		tab_invertida->pid[i] = 0;
-		tab_invertida->livre[i] = true;
-		tab_invertida->pagina[i] = "-";
-		tab_invertida->tempo_de_referencia[i] = -9999;
-	}
-
 }
 
 int main (int argc, char *argv[]) {
@@ -170,7 +174,6 @@ int main (int argc, char *argv[]) {
 			}
 			paginas[i] = "\n";
 			
-			inicializa_tabela();
 			aloca_frames(paginas, i);
 			imprime_resultado();
 
