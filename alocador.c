@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/msg.h>
 
 #define NUMERO_USUARIOS 4 // 5 usuarios
 #define NUMERO_FRAMES 10 // 5 page frames existem

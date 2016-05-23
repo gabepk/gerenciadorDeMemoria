@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #define NUMERO_FRAMES 10 // TODO: Colocar tudo num .h soh
 #define OCUPACAO_OK 8
