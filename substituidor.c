@@ -8,10 +8,15 @@
  *
  */
 
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <stdbool.h>
+#include <stdio.h>
 
 #define NUMERO_FRAMES 10 // TODO: Colocar tudo num .h soh
+#define OCUPACAO_OK 8
 
 typedef struct tabela
 {
@@ -22,12 +27,45 @@ typedef struct tabela
 } tabela;
 
 struct tabela *ptr_tabela;
+int id_mem;
 
 void shutdown_substituidor () {
 	exit(1);
 }
 
-void substituicao () {
+void envia_pid_arquivo() {
+	FILE *fp;
+	long pid;
+
+	fp = fopen("arq_pids.txt", "a+");
+
+	if (fp != NULL)
+	{
+		pid = getpid();
+		printf("pid: %ld\n", pid);
+		fprintf(fp, "%ld,", pid);		
+	}
+	fclose(fp);
+	
+	return;
+}
+
+void obtem_ptr_tabela() {
+	// Obtem memoria compartilhada
+	if ((id_mem = shmget(0x89951, sizeof(int), 0x1FF)) < 0)
+	{
+		printf("Erro na obtencao da memoria compartilhada\n");
+		exit(1);
+	}
+	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0);
+	if (ptr_tabela == (tabela *)-1) 
+	{
+		printf("Erro no attach do ponteiro para a tabela de frames\n");
+		exit(1);
+	}
+}
+
+void executa_substituicao () {
 	int i, indice, tempo_maximo;
 	int frames_livres = 0;
 
@@ -56,27 +94,16 @@ void substituicao () {
 			ptr_tabela->tempo_de_referencia[indice] = -9999;
 		}
 
-		// Unlock com Psem
+		// Unlock com Vsem
 	}
 }
 
 int main () {
 	signal(SIGUSR1, shutdown_substituidor);
+	envia_pid_arquivo();
+	obtem_ptr_tabela();
 	
-	if ((id_mem = semget(0x89951, 1, 0x1FF)) < 0)
-	{
-		printf("Erro na obtencao da memoria compartilhada\n");
-		exit(1);
-	}
-
-	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0);
-	if (pshm == (tabela *)-1) 
-	{
-		printf("Erro no attach do ponteiro para a tabela de frames\n");
-		exit(1);
-	}
-
-	substituicao();
+	executa_substituicao();
 
 	return 0;
 }

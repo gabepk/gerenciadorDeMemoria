@@ -7,7 +7,10 @@
  *  GCC - versao 4.8.4
  *
  */
-
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,9 +23,41 @@ typedef struct mensagem
 	long pid;
 	char pagina[10];
 } mensagem;
+int fila_1, fila_2;
 
 void shutdown_usuario () {
 	exit(1);
+}
+
+void obtem_estruturas_compartilhadas() {
+	// Obtem filas de mensagens
+	if ((fila_1 = msgget(0x126785, 0x1FF)) < 0) // referencia_pagina
+	{
+		printf("Erro na obtencao do id da fila 1\n");
+		exit(1);
+	}
+	if ((fila_2 = msgget(0x118995, 0x1FF)) < 0) // recebe resposta
+	{
+		printf("Erro na obtencao do id da fila 2\n");
+		exit(1);
+	}
+	return;
+}
+
+void envia_pid_arquivo() {
+	FILE *fp;
+	long pid;
+
+	fp = fopen("arq_pids.txt", "a+");
+
+	if (fp != NULL)
+	{
+		pid = getpid();
+		printf("pid: %ld\n", pid);
+		fprintf(fp, "%ld,", pid);		
+	}
+	fclose(fp);
+	
 	return;
 }
 
@@ -39,7 +74,7 @@ int main (int argc, char *argv[]) {
 		if (fp != NULL)
 		{
 			int i = 0;
-			int fila_1, fila_2;
+			
 			mensagem msg_fila_1, msg_fila_2;
 			char linha[TAMANHO_LINHA], *token;
 			char *paginas[TAMANHO_LINHA]; // mudar para dinamico
@@ -53,17 +88,8 @@ int main (int argc, char *argv[]) {
 			}
 			paginas[i] = "\n";
 
-			// Obtem filas de mensagens
-			if ((fila_1 = msgget(0x1BC, 0x1FF)) < 0) // referencia_pagina
-			{
-				printf("Erro na obtencao do id da fila 1\n");
-				exit(1);
-			}
-			if ((fila_2 = msgget(0x118995, 0x1FF)) < 0) // recebe resposta
-			{
-				printf("Erro na obtencao do id da fila 2\n");
-				exit(1);
-			}
+			obtem_estruturas_compartilhadas();
+			envia_pid_arquivo();
 			
 			// Envia paginas e recebe respostas
 			printf("fila_1 = %d\n", fila_1);
@@ -83,8 +109,8 @@ int main (int argc, char *argv[]) {
 					printf("Erro no envio da pagina %s do processo %ld\n", msg_fila_1.pagina, msg_fila_1.pid);
 					exit(1);
 				}
-				
 				printf("Mensagem enviada: %ld %s\n", msg_fila_1.pid, msg_fila_1.pagina);
+
 				sleep(3);
 				
 				if ( msgrcv(fila_2, &msg_fila_2, sizeof(msg_fila_2)-sizeof(long), 0, 0) < 0)
@@ -92,10 +118,8 @@ int main (int argc, char *argv[]) {
 					printf("Erro na obtencao da mensagem na fila 2\n");
 					exit(1);
 				}
-				//printf("mensagem recebida = %ld %s\n", msg_fila_2.pid, msg_fila_2.pagina);
-				// block
-				// msgrcv(fila_2, msg_fila_2, sizeof(msg_fila_2), 0); // verificar se msg_fila_2.pid é igual ao pid dele
-				// unblock
+				printf("Mensagem recebida = %ld %s\n", msg_fila_2.pid, msg_fila_2.pagina);
+
 				i++;
 			}
 

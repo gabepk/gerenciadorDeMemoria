@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define NUMERO_USUARIOS 4 // 5 usuarios
 #define NUMERO_FRAMES 10 // 5 page frames existem
@@ -33,14 +34,15 @@ typedef struct tabela
 {
 	int pid[NUMERO_FRAMES];
 	bool livre[NUMERO_FRAMES];
-	char *pagina[NUMERO_FRAMES];
+	int pagina[NUMERO_FRAMES];
 	int tempo_de_referencia[NUMERO_FRAMES];
 } tabela;
 
+struct mensagem msg_fila_1, msg_fila_2;
+struct tabela *ptr_tabela;
 struct sembuf op[2];
-int id_sem;
-int id_mem;
-int fila_1, fila_2, fila_dummy;
+int id_sem, id_mem;
+int fila_1, fila_2;
 
 int numero_page_faults[NUMERO_USUARIOS];
 int numero_page_faults_total;
@@ -78,7 +80,7 @@ void cria_estruturas_compartilhadas()
 		exit(1);
 	}
 	// Cria filas de mensagens
-	if ((fila_1 = msgget(0x1BC, IPC_CREAT|0x1FF)) < 0) // recebe referencia_pagina
+	if ((fila_1 = msgget(0x126785, IPC_CREAT|0x1FF)) < 0) // recebe referencia_pagina
 	{
 		printf("Erro na obtencao da fila 1\n");
 		exit(1);
@@ -89,16 +91,11 @@ void cria_estruturas_compartilhadas()
 		exit(1);
 	}
 	// Cria memoria compartilhada
-	if ((id_mem = shmget(0x89951, sizeof(tabela), IPC_CREAT|0x1FF)) < 0)
+	if ((id_mem = shmget(0x89951, sizeof(int), IPC_CREAT|0x1FF)) < 0)
 	{
-		printf("erro na criacao da memoria compartilhada\n");
+		printf("erro na criacao da memoria compartilhada para tabela\n");
 		exit(1);
 	}
-
-	printf("id_sem = %d\n", id_sem);	
-	printf("fila_1 = %d\n", fila_1);
-	printf("fila_2 = %d\n", fila_2);
-	printf("id_mem = %d\n", id_mem);
 }
 
 void exclui_estruturas_compartilhadas()
@@ -128,85 +125,145 @@ void exclui_estruturas_compartilhadas()
 	}
 }
 
+void envia_pid_arquivo() {
+	FILE *fp;
+	long pid;
+
+	fp = fopen("arq_pids.txt", "w+");
+
+	if (fp != NULL)
+	{
+		pid = getpid();
+		printf("pid: %ld\n", pid);
+		fprintf(fp, "%ld,", pid);		
+	}
+	fclose(fp);
+	
+	return;
+}
+
+void imprime_tabela() {
+	int i;
+	printf("\t Pid \t Pagina \t Tempo de referecia\n");
+	for (i = 0; i < NUMERO_FRAMES; i++)
+	{
+		if (! ptr_tabela->livre[i])
+			printf("\t %d \t %d \t\t %d\n", ptr_tabela->pid[i], ptr_tabela->pagina[i], ptr_tabela->tempo_de_referencia[i]);
+		else printf("\t %d \t Livre\n", ptr_tabela->pid[i]);
+	}
+}
+
 void shutdown_alocador()
 {
 	int i;
 	printf("\n\n");
 	for (i = 0; i < NUMERO_USUARIOS; i++) {
+		// TIRAR ISSO
+		numero_page_faults[i] = 0; // ARRUMAR ISSO
+
 		printf("\t Numero de page faults do processo %d: %d\n", i, numero_page_faults[i]);
 		numero_page_faults_total += numero_page_faults[i];
 	}
 	printf("\t Numero de page faults total: %d\n", numero_page_faults_total);
 	printf("\t Numero de execucoes do processo de substituicao: %d\n", numero_exec_substituicao);
 	printf("\t Configuracao final da memoria:\n");
-
-	printf("Pid \t Pagina \t Tempo de referecia");
-	for (i = 0; i < NUMERO_FRAMES; i++)
-	{
-		// Usar tab_invertida.livre
-
-		/*if (tab_invertida.tempo_de_referencia < 1) // Uma pagina eh referenciada no minimo uma vez
-			printf("\t %d \t %d \t %d", tab_invertida.pid, tab_invertida.pagina, tab_invertida.tempo_de_referencia);
-		else printf("\t %d \t Livre", tab_invertida.pid,);*/
-	}
-
+	
+	imprime_tabela();
 	exclui_estruturas_compartilhadas();
 	exit(1);
 }
 
-bool aloca_frame(mensagem *msg)
+void inicializa_tabela()
 {
-	// tentar reservar page frame pra pag i
-	/// se pág i já tá lá
-		// retorna ela
-	/// se não
-		/// se tiver espaço na frame
-			// mapear página numa page frame livre aleatória
-			// sinalizar que houve page fault signal unix
-		    // numero_page_faults[msg->pid]++;
-		/// se não
-			// substituição
-			// kill (_, SIGUSR2);
-			numero_exec_substituicao++;
-	return true;
+	int i;
+	for (i = 0; i < NUMERO_FRAMES; i++) {
+		ptr_tabela->pid[i] = 0;
+		ptr_tabela->livre[i] = true;
+		ptr_tabela->pagina[i] = 9999;
+		ptr_tabela->tempo_de_referencia[i] = -9999;
+	}
+	return;
 }
 
-int main ()
+bool aloca_frame(mensagem *msg)
 {
-	struct mensagem msg_fila_1;
-	struct mensagem msg_fila_2;
-	tabela *ptr_tabela;
+	int i, ocupacao_tabela = 0;
+	bool page_fault = true;
 
-	signal(SIGUSR1, shutdown_alocador);
+	int pg = atoi(msg->pagina);
 
-	cria_estruturas_compartilhadas();
+	// Verifica se pagina esta na tabela de frames
+	for (i = 0; i < NUMERO_FRAMES; i++)
+	{
+		printf("minha pag: %d \t pag da tab: %d\n", pg, ptr_tabela->pagina[i]);
+		//if (strcmp(msg->pagina, ptr_tabela->pagina[i]) == 0
+		if (pg == ptr_tabela->pagina[i])
+		{
+			printf("Pagina %d ENCONTRADA no indice %d \n", pg, i);
+			ptr_tabela->tempo_de_referencia[i] = 0; // Marca como usado mais recentemente
+			page_fault = false;
+			break;
+		}
+		if (!ptr_tabela->livre[i]) ocupacao_tabela++; // Conta numero de frames ocupadas
+	}
 
-	// Aloca tabela na memória compartilhada
-	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0);
-	//ptr_tabela = &tab_invertida;
-	printf("Cheguei aqui.\n");
+	// Se nao estah, houve page fault
+	if(page_fault) {
+		printf("Page Fault.\n \b");
+		// numero_page_faults[];
+		// TODO : incrementar numero page faults de cada processo
+
+		printf("ocupacao: %d\n", ocupacao_tabela);
+		while (ocupacao_tabela >= MAX_OCUPACAO)
+		{
+			printf("Nao tem espaco. Libera Frame.\n");
+			numero_exec_substituicao++;
+			//substituicao_de_frames();
+			// Psem();
+			// Executa substituicao
+			// Vsem();
+			ocupacao_tabela--;
+		}
+
+		for (i = 0; i < NUMERO_FRAMES; i++)
+		{
+			// Se frame estiver livre, insere nova pagina lah
+			if (ptr_tabela->livre[i])
+			{
+				printf("Pagina %d INSERIDA no indice %d \n", pg, i);
+				ptr_tabela->pid[i] = msg->pid;
+				ptr_tabela->livre[i] = false;
+				ptr_tabela->pagina[i] = pg;
+				ptr_tabela->tempo_de_referencia[i] = 0; // Marca como usado mais recentemente
+				ocupacao_tabela++;
+				break;
+			}
+		}
+	}
+	printf("\n\n");
+	imprime_tabela();
+	printf("\n\n");
+	// Incrementa tempo de referencia de todas as paginas
+	for (i = 0; i < NUMERO_FRAMES; i++)
+		ptr_tabela->tempo_de_referencia[i]++;
+
+	return page_fault;
+}
+
+void executa_alocacao() {
+	numero_exec_substituicao = 0;
+	inicializa_tabela();
 	while (1) {
-		printf("1.\n");
+		printf("Esperando mensagens...\n");
 		if ((msgrcv(fila_1, &msg_fila_1, sizeof(msg_fila_1)-sizeof(long), 0, 0)) < 0)
 		{
 			printf("Erro na obtencao da mensagem na fila 1\n");
 			exit(1);
 		}
-
-		//printf("Mensagem recebida: %ld %s \n", msg_fila_1.pid, msg_fila_1.pagina);
-		if (!(&msg_fila_1)) {
-			printf("Deu ruim\n");
-		}
-		printf("Deu bom\n");
 		printf("Pid: %ld e Pag = %s \n", msg_fila_1.pid, msg_fila_1.pagina);
 
 		msg_fila_2.pid = msg_fila_1.pid;
-		if(aloca_frame(&msg_fila_1)) {
-			msg_fila_2.pagina[0] = 's';
-		}
-		else {
-			msg_fila_2.pagina[0] = 'n';
-		}
+		strcpy(msg_fila_2.pagina, aloca_frame(&msg_fila_1) ? "Page fault" : "Page found");
 
 		if ((msgsnd(fila_2, &msg_fila_2, sizeof(msg_fila_2)-sizeof(long), 0)) < 0)
 		{
@@ -214,6 +271,23 @@ int main ()
 			exit(1);
 		}
 	}
+	return;
+}
+
+int main ()
+{
+	signal(SIGUSR1, shutdown_alocador);
+	cria_estruturas_compartilhadas();
+	envia_pid_arquivo();
+
+	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0); // Aloca tabela na memória compartilhada
+	if (ptr_tabela == (tabela *)-1) 
+	{
+		printf("Erro no attach do ponteiro para a tabela de frames\n");
+		exit(1);
+	}
+
+	executa_alocacao();
 
 	return 0;
 }
