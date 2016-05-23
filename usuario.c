@@ -24,8 +24,12 @@ typedef struct mensagem
 	char pagina[10];
 } mensagem;
 int fila_1, fila_2;
+char *pid_logico;
+int numero_page_faults = 0;
 
 void shutdown_usuario () {
+	printf("\n\n");
+	printf("\t Numero de page faults do processo %s: %d\n", pid_logico, numero_page_faults);
 	exit(1);
 }
 
@@ -66,7 +70,6 @@ int main (int argc, char *argv[]) {
 	if (argc > 1)
 	{
 		// Pid logico que sera usado como indice na tabela de frames
-		char *pid_logico;
 		pid_logico = strndup(argv[1]+13, 1);
 
 		FILE *fp;
@@ -92,8 +95,6 @@ int main (int argc, char *argv[]) {
 			envia_pid_arquivo();
 			
 			// Envia paginas e recebe respostas
-			printf("fila_1 = %d\n", fila_1);
-			printf("fila_2 = %d\n", fila_2);
 			msg_fila_1.pid = getpid();
 			printf("pid = %ld\n", msg_fila_1.pid);
 			i = 0;
@@ -109,7 +110,7 @@ int main (int argc, char *argv[]) {
 					printf("Erro no envio da pagina %s do processo %ld\n", msg_fila_1.pagina, msg_fila_1.pid);
 					exit(1);
 				}
-				printf("Mensagem enviada: %ld %s\n", msg_fila_1.pid, msg_fila_1.pagina);
+				printf("Enviado: %s\n", msg_fila_1.pagina);
 
 				sleep(3);
 				
@@ -118,12 +119,18 @@ int main (int argc, char *argv[]) {
 					printf("Erro na obtencao da mensagem na fila 2\n");
 					exit(1);
 				}
-				printf("Mensagem recebida = %ld %s\n", msg_fila_2.pid, msg_fila_2.pagina);
+				printf("Recebido = %s\n", msg_fila_2.pagina);
+
+				if (strstr(msg_fila_2.pagina, "fault") != NULL) {
+					numero_page_faults++;
+					printf("numero_page_faults = %d\n", numero_page_faults);
+				}
 
 				i++;
 			}
 
 			fclose(fp);
+			shutdown_usuario();
 		}
 		else
 		{

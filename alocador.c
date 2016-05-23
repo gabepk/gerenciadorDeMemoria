@@ -54,7 +54,7 @@ void Psem()
 	op[0].sem_op = 0;
 	op[0].sem_flg = 0; // Semaforo blocante
 	op[1].sem_num = 0;
-	op[1].sem_op = 1;
+	op[1].sem_op = 1; // Comeca com zero permissoes
 	op[1].sem_flg = 0; // Semaforo blocante
 	if (semop(id_sem, op, 2) < 0)
 		printf("Erro %d\n", errno);
@@ -155,21 +155,15 @@ void imprime_tabela() {
 
 void shutdown_alocador()
 {
+	printf("Vou morrer\n");
 	int i;
 	printf("\n\n");
-	for (i = 0; i < NUMERO_USUARIOS; i++) {
-		// TIRAR ISSO
-		numero_page_faults[i] = 0; // ARRUMAR ISSO
-
-		printf("\t Numero de page faults do processo %d: %d\n", i, numero_page_faults[i]);
-		numero_page_faults_total += numero_page_faults[i];
-	}
 	printf("\t Numero de page faults total: %d\n", numero_page_faults_total);
 	printf("\t Numero de execucoes do processo de substituicao: %d\n", numero_exec_substituicao);
 	printf("\t Configuracao final da memoria:\n");
 	
 	imprime_tabela();
-	exclui_estruturas_compartilhadas();
+	//exclui_estruturas_compartilhadas();
 	exit(1);
 }
 
@@ -193,14 +187,14 @@ bool aloca_frame(mensagem *msg)
 	int pg = atoi(msg->pagina);
 
 	// Verifica se pagina esta na tabela de frames
+
 	for (i = 0; i < NUMERO_FRAMES; i++)
 	{
-		printf("minha pag: %d \t pag da tab: %d\n", pg, ptr_tabela->pagina[i]);
-		//if (strcmp(msg->pagina, ptr_tabela->pagina[i]) == 0
 		if (pg == ptr_tabela->pagina[i])
 		{
 			printf("Pagina %d ENCONTRADA no indice %d \n", pg, i);
 			ptr_tabela->tempo_de_referencia[i] = 0; // Marca como usado mais recentemente
+			ptr_tabela->pid[i] = msg->pid;
 			page_fault = false;
 			break;
 		}
@@ -209,21 +203,34 @@ bool aloca_frame(mensagem *msg)
 
 	// Se nao estah, houve page fault
 	if(page_fault) {
-		printf("Page Fault.\n \b");
-		// numero_page_faults[];
-		// TODO : incrementar numero page faults de cada processo
+		numero_page_faults_total++;
 
-		printf("ocupacao: %d\n", ocupacao_tabela);
-		while (ocupacao_tabela >= MAX_OCUPACAO)
+		printf("Page Fault. Ocupacao: %d\n", ocupacao_tabela);
+		
+		if (ocupacao_tabela >= MAX_OCUPACAO)
 		{
-			printf("Nao tem espaco. Libera Frame.\n");
+			printf("Nao tem espaco. Libera uma frame.\n");
 			numero_exec_substituicao++;
-			//substituicao_de_frames();
-			// Psem();
-			// Executa substituicao
-			// Vsem();
-			ocupacao_tabela--;
+			
+			Vsem(); // Libera Substituidor Semaforo deve começar com 0 permissoes
+			printf("Executa substituidor uma vez\n");
+			sleep(1);
+
+			/* NAO DEIXA PROCESSO BLOQUEADO
+			while(!(ptr_tabela->substituiu)) {} // Garante que não vai pegar Psem() antes do substituidor
+			*/
+
+			/* DEMORA DEMAIS
+			do {
+				ocupacao_tabela = 0;
+				for (i = 0; i < NUMERO_FRAMES; i++) {
+					if (!ptr_tabela->livre[i]) ocupacao_tabela++; 
+				}
+			} while(ocupacao_tabela >= MAX_OCUPACAO));*/
+			
+			// Psem();	// Fica bloqueado ate substituidor terminar
 		}
+		
 
 		for (i = 0; i < NUMERO_FRAMES; i++)
 		{
@@ -240,9 +247,9 @@ bool aloca_frame(mensagem *msg)
 			}
 		}
 	}
-	printf("\n\n");
+	printf("\n");
 	imprime_tabela();
-	printf("\n\n");
+	printf("\n");
 	// Incrementa tempo de referencia de todas as paginas
 	for (i = 0; i < NUMERO_FRAMES; i++)
 		ptr_tabela->tempo_de_referencia[i]++;
