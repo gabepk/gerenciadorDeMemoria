@@ -23,9 +23,10 @@ typedef struct mensagem
 	long pid;
 	char pagina[10];
 } mensagem;
-int fila_1, fila_2;
+int fila_1, fila_2, fila_3;
 char *pid_logico;
 int numero_page_faults = 0;
+long msg_fila_3[7];
 
 void shutdown_usuario () {
 	printf("\n\n");
@@ -45,28 +46,18 @@ void obtem_estruturas_compartilhadas() {
 		printf("Erro na obtencao do id da fila 2\n");
 		exit(1);
 	}
-	return;
-}
-
-void envia_pid_arquivo() {
-	FILE *fp;
-	long pid;
-
-	fp = fopen("arq_pids.txt", "a+");
-
-	if (fp != NULL)
+	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem fila de pids para shutdown
 	{
-		pid = getpid();
-		printf("pid: %ld\n", pid);
-		fprintf(fp, "%ld,", pid);		
+		printf("Erro na obtencao da fila 3\n");
+		exit(1);
 	}
-	fclose(fp);
-	
 	return;
 }
 
 int main (int argc, char *argv[]) {
+	int p;
 	signal(SIGUSR1, shutdown_usuario);
+	
 	if (argc > 1)
 	{
 		// Pid logico que sera usado como indice na tabela de frames
@@ -92,8 +83,21 @@ int main (int argc, char *argv[]) {
 			paginas[i] = "\n";
 
 			obtem_estruturas_compartilhadas();
-			envia_pid_arquivo();
-			
+				
+			if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
+			{
+				printf("Erro na obtencao da mensagem na fila 3\n");
+				exit(1);
+			}
+	
+			msg_fila_3[atoi(pid_logico) + 2] = getpid();
+			printf("pid do usuario[%d]: %ld\n", p, msg_fila_3[p]);
+			if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
+			{
+				printf("Erro no envio de mensagem na fila 3\n");
+				exit(1);
+			}
+
 			// Envia paginas e recebe respostas
 			msg_fila_1.pid = getpid();
 			printf("pid = %ld\n", msg_fila_1.pid);

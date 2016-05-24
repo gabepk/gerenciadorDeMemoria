@@ -64,23 +64,6 @@ void shutdown_substituidor () {
 	exit(1);
 }
 
-void envia_pid_arquivo() {
-	FILE *fp;
-	long pid;
-
-	fp = fopen("arq_pids.txt", "a+");
-
-	if (fp != NULL)
-	{
-		pid = getpid();
-		printf("pid: %ld\n", pid);
-		fprintf(fp, "%ld,", pid);		
-	}
-	fclose(fp);
-	
-	return;
-}
-
 void obtem_estruturas_compartilhadas() {
 	// Obtem memoria compartilhada
 	if ((id_mem = shmget(0x89951, sizeof(int), 0x1FF)) < 0)
@@ -100,7 +83,8 @@ void obtem_estruturas_compartilhadas() {
 		printf("Erro na obtencao do semaforo\n");
 		exit(1);
 	}
-	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem fila 3
+	//obtem fila de pids para shutdown
+	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) 
 	{
 		printf("Erro na obtencao da fila 3\n");
 		exit(1);
@@ -168,15 +152,15 @@ void executa_substituicao () {
 
 int main () {
 	signal(SIGUSR1, shutdown_substituidor);
-	envia_pid_arquivo();
 	obtem_estruturas_compartilhadas();
 	
+	//recebe fila de pids
 	if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
 	{
 		printf("Erro na obtencao da mensagem na fila 3\n");
 		exit(1);
 	}
-
+	//envia pids para shutdown
 	msg_fila_3[1] = getpid();
 	printf("pid do substituidor: %ld\n", msg_fila_3[1]);
 	if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
@@ -184,7 +168,6 @@ int main () {
 		printf("Erro no envio de mensagem na fila 3\n");
 		exit(1);
 	}
-	printf("Enviado: %ld\n", msg_fila_3[1]);
 
 	executa_substituicao();
 

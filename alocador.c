@@ -138,23 +138,6 @@ void exclui_estruturas_compartilhadas()
 	}
 }
 
-void envia_pid_arquivo() {
-	FILE *fp;
-	long pid;
-
-	fp = fopen("arq_pids.txt", "w+");
-
-	if (fp != NULL)
-	{
-		pid = getpid();
-		printf("pid: %ld\n", pid);
-		fprintf(fp, "%ld,", pid);		
-	}
-	fclose(fp);
-	
-	return;
-}
-
 void imprime_tabela() {
 	int i;
 	printf(" i \t Pid \t Pagina \t Tempo de referecia\n");
@@ -298,8 +281,8 @@ int main ()
 {
 	signal(SIGUSR1, shutdown_alocador);
 	cria_estruturas_compartilhadas();
-	envia_pid_arquivo();
-
+	
+	//Envia pid para o shutdown
 	msg_fila_3[0] = getpid();
 	printf("pid do alocador: %ld\n", msg_fila_3[0]);
 	if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)

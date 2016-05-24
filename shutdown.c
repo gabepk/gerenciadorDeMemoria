@@ -17,29 +17,29 @@
 #include<sys/ipc.h>
 #include<sys/msg.h>
 
-#define TAMANHO_LINHA 100
-
 int main ()
 {
 
-	int fila_3, i;
+	int fila_3, i=0;
 	long msg_fila_3[7];	
 
-	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem a fila 3
+	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem fila de pids para shutdown
 	{
-		printf("Erro na criacao da fila 3\n");
+		printf("Erro na obtenca da fila 3\n");
 		exit(1);
 	}
 
-	if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
+	if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0) //obtem os pids para shutdown
 	{
 		printf("Erro na obtencao da mensagem na fila 3\n");
 		exit(1);
 	}
-	for(i=0;i<7;i++)
+	//mata todos os processos em execucao
+	while(msg_fila_3[i] != 0)
 	{
 		printf("msg_fila_3[%d]: %ld\n", i, msg_fila_3[i]);
-		//kill(msg_fila_3[i], SIGUSR1);
+		kill(msg_fila_3[i], SIGUSR1);
+		i++;
 	}
 
 	if (msgctl(fila_3, IPC_RMID, NULL) < 0) // exclui fila 3 de pids
@@ -48,29 +48,5 @@ int main ()
 		exit(1);
 	}
 
-	// Recebe pids
-/*
-	FILE *fp;
-	int i = 0;
-	char linha[TAMANHO_LINHA], *token;
-	char *paginas[TAMANHO_LINHA]; // mudar para dinamico
-
-	
-	fp = fopen ("arq_pids.txt", "r");
-
-	if (fp != NULL)
-	{
-		fgets(linha, TAMANHO_LINHA, fp);
-		token = strtok(linha, ",");
-		while (token != NULL) {
-			paginas[i] = token;
-			token = strtok(NULL, ","); // ve se funciona
-			int pid_int = atoi(paginas[i]);
-			kill(pid_int, SIGUSR1);
-			i++;
-		}
-		paginas[i] = "\n";
-	}
-	fclose(fp);*/
 	return 0;
 }
