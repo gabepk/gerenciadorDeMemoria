@@ -34,7 +34,11 @@ void obtem_estruturas_compartilhadas() {
 }
 
 int main (int argc, char *argv[]) {
+	int i = 0;
 	signal(SIGUSR1, shutdown_usuario);
+
+
+
 	
 	if (argc > 1)
 	{
@@ -44,12 +48,20 @@ int main (int argc, char *argv[]) {
 		// Escreve pid em vetor global
 		vetor_pids[pid_logico + 2] = getpid();
 
+
+
+		printf("pid logico = %d\n\n", pid_logico);
+		// TESTE VETOR DE PID
+		for (i = 0; i < NUMERO_USUARIOS + 2; i++) {
+			printf("pid %d = %d\n", i, vetor_pids[i]);
+		}
+
+
+
 		FILE *fp;
 		fp = fopen(argv[1], "r");
 		if (fp != NULL)
-		{
-			int i = 0;
-			
+		{			
 			mensagem msg_fila_1, msg_fila_2;
 			char linha[TAMANHO_LINHA], *token;
 			char *paginas[TAMANHO_LINHA]; // mudar para dinamico

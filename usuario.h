@@ -10,4 +10,3 @@ int pid_logico;
 //Prototipos de funcoes
 void shutdown_usuario ();
 void obtem_estruturas_compartilhadas();
-

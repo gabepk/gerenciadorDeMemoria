@@ -65,8 +65,6 @@ void executa_substituicao () {
 	int i, j=0, k, indice, tempo_maximo;
 	int frames_livres = 0;
 
-	//Psem();
-
 	while (1) {
 
 		// Conta numero de frames livres
@@ -99,17 +97,6 @@ void executa_substituicao () {
 			ptr_tabela->pagina[indice] = 9999;
 			ptr_tabela->tempo_de_referencia[indice] = -9999;
 
-
-			// Imprime tabela
-			printf("\t i \t Pid \t Pagina \t Tempo de referecia\n");
-			for (k = 0; k < NUMERO_FRAMES; k++)
-			{
-				if (! ptr_tabela->livre[k])
-					printf("\t %d \t %d \t %d \t\t %d\n", k, ptr_tabela->pid[k], ptr_tabela->pagina[k], ptr_tabela->tempo_de_referencia[k]);
-				else printf("\t %d \t %d \t Livre\n", k, ptr_tabela->pid[k]);
-			}
-
-
 			// Unlock com Vsem
 			Vsem();
 			sleep(1);
@@ -120,9 +107,16 @@ void executa_substituicao () {
 
 int main () {
 	signal(SIGUSR1, shutdown_substituidor);
+	int i;
 
 	// Escreve pid em vetor global
 	vetor_pids[1] = getpid();
+
+	// TESTE VETOR DE PID
+	for (i = 0; i < NUMERO_USUARIOS + 2; i++) {
+		printf("pid %d = %d\n", i, vetor_pids[i]);
+	}
+
 
 	obtem_estruturas_compartilhadas();
 	executa_substituicao();

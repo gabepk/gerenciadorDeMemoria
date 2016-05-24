@@ -233,6 +233,15 @@ int main ()
 		vetor_pids[i+2] = -1; // Inicializa pid dos usuarios
 	}
 
+
+	// TESTE VETOR DE PID
+	for (i = 0; i < NUMERO_USUARIOS + 2; i++) {
+		printf("pid %d = %d\n", i, vetor_pids[i]);
+	}
+
+
+
+
 	// Aloca tabela na memória compartilhada
 	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0);
 	if (ptr_tabela == (tabela *)-1) 
