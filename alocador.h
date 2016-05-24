@@ -29,12 +29,11 @@ typedef struct tabela
 	int tempo_de_referencia[NUMERO_FRAMES];
 } tabela;
 
-struct mensagem msg_fila_1, msg_fila_2;
+struct mensagem msg_fila_1, msg_fila_2, msg_fila_pids;
 struct tabela *ptr_tabela;
 struct sembuf op[2];
 int id_sem, id_mem;
-int fila_1, fila_2, fila_3;
-long msg_fila_3[7];
+int fila_1, fila_2, fila_pids;
 
 int numero_page_faults[NUMERO_USUARIOS];
 int numero_page_faults_total;

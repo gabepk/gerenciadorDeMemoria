@@ -12,34 +12,31 @@
 
 int main ()
 {
+	int i=0, result=1;
 
-	int fila_3, i=0;
-	long msg_fila_3[7];	
-
-	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem fila de pids para shutdown
+	// Obtem fila de pids para shutdown
+	if ( (fila_pids = msgget(0x118785, 0x1FF)) < 0)
 	{
-		printf("Erro na obtenca da fila 3\n");
+		printf("Erro na obtenca da fila de pids\n");
 		exit(1);
 	}
 
-	if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0) //obtem os pids para shutdown
-	{
-		printf("Erro na obtencao da mensagem na fila 3\n");
-		exit(1);
-	}
-	//mata todos os processos em execucao
-	while(msg_fila_3[i] != 0)
-	{
-		printf("msg_fila_3[%d]: %ld\n", i, msg_fila_3[i]);
-		kill(msg_fila_3[i], SIGUSR1);
-		i++;
+	while(result != 0) { // TODO Alterar esse loop, pra nao dar erro de result < 0 sem necessidade
+
+		result = msgrcv(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0, IPC_NOWAIT);
+		printf("result = %d\t", result);
+		printf("pid = %ld\n", msg_fila_pids.pid);
+
+		if(result < 0)
+		{
+			printf("Erro na obtencao da mensagem na fila de pids\n");
+			exit(1);
+		}
+		else if (result > 0) {
+			kill(msg_fila_pids.pid, SIGUSR1);
+		}
 	}
 
-	if (msgctl(fila_3, IPC_RMID, NULL) < 0) // exclui fila 3 de pids
-	{
-		printf("Erro na exclusao da fila 3\n");
-		exit(1);
-	}
 
 	return 0;
 }

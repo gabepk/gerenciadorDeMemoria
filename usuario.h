@@ -11,13 +11,14 @@
 
 typedef struct mensagem
 {
-	long pid;
-	char pagina[10];
+	long pid; // TODO: nao eh necessariamente um pid 
+	char pagina[10]; // pagina[30];
 } mensagem;
-int fila_1, fila_2, fila_3;
+
+struct mensagem msg_fila_pids;
+int fila_1, fila_2, fila_pids;
 char *pid_logico;
 int numero_page_faults = 0;
-long msg_fila_3[7];
 
 //Prototipos de funcoes
 void shutdown_usuario ();

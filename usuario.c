@@ -28,12 +28,24 @@ void obtem_estruturas_compartilhadas() {
 		printf("Erro na obtencao do id da fila 2\n");
 		exit(1);
 	}
-	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem fila de pids para shutdown
+	if ( (fila_pids = msgget(0x118785, 0x1FF)) < 0) // obtem fila de pids para shutdown
 	{
 		printf("Erro na obtencao da fila 3\n");
 		exit(1);
 	}
 	return;
+}
+
+void envia_pid_shutdown()
+{
+	//Envia pid para o shutdown
+	msg_fila_pids.pid = getpid();
+	printf("pid = %ld\n", msg_fila_pids.pid);
+	if ((msgsnd(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0)) < 0)
+	{
+		printf("Erro no envio de mensagem na fila 3\n");
+		exit(1);
+	}
 }
 
 int main (int argc, char *argv[]) {
@@ -49,8 +61,7 @@ int main (int argc, char *argv[]) {
 		if (fp != NULL)
 		{
 			int i = 0;
-			
-			mensagem msg_fila_1, msg_fila_2;
+			struct mensagem msg_fila_1, msg_fila_2;
 			char linha[TAMANHO_LINHA], *token;
 			char *paginas[TAMANHO_LINHA]; // mudar para dinamico
 
@@ -64,20 +75,7 @@ int main (int argc, char *argv[]) {
 			paginas[i] = "\n";
 
 			obtem_estruturas_compartilhadas();
-			
-			//recebe pids dos processos e envia para o shutdown	
-			if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
-			{
-				printf("Erro na obtencao da mensagem na fila 3\n");
-				exit(1);
-			}
-	
-			msg_fila_3[atoi(pid_logico) + 2] = getpid();
-			if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
-			{
-				printf("Erro no envio de mensagem na fila 3\n");
-				exit(1);
-			}
+			envia_pid_shutdown();
 
 			// Envia paginas e recebe respostas
 			msg_fila_1.pid = getpid();
@@ -85,11 +83,11 @@ int main (int argc, char *argv[]) {
 			i = 0;
 			while (paginas[i] != "\n") { // TODO usar string compare
 				int j = 0;
-				while(paginas[j] != "\n") {
+				while(paginas[j] != "\n") { // TODO deve existir uma funcao que faz isso
 					msg_fila_1.pagina[j] = paginas[i][j];
 					j++;
 				}
-			
+				
 				if ( msgsnd(fila_1, &msg_fila_1, sizeof(msg_fila_1)-sizeof(long), 0) < 0)
 				{
 					printf("Erro no envio da pagina %s do processo %ld\n", msg_fila_1.pagina, msg_fila_1.pid);

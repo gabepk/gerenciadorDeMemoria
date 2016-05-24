@@ -13,6 +13,12 @@
 #define NUMERO_FRAMES 10 // TODO: Colocar tudo num .h soh
 #define OCUPACAO_OK 8
 
+typedef struct mensagem
+{
+	long pid; // TODO: nao eh necessariamente um pid 
+	char pagina[10]; // pagina[30];
+} mensagem;
+
 typedef struct tabela
 {
 	int pid[NUMERO_FRAMES];
@@ -21,11 +27,11 @@ typedef struct tabela
 	int tempo_de_referencia[NUMERO_FRAMES];
 } tabela;
 
+struct mensagem msg_fila_pids;
 struct tabela *ptr_tabela;
 struct sembuf op[2];
 int id_mem, id_sem;
-int fila_3;
-long msg_fila_3[7];
+int fila_pids;
 
 //Prototipos de funcoes
 void Psem();

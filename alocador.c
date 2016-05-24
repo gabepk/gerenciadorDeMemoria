@@ -52,7 +52,7 @@ void cria_estruturas_compartilhadas()
 		printf("Erro na criacao da fila 2\n");
 		exit(1);
 	}
-	if ( (fila_3 = msgget(0x118785, IPC_CREAT|0x1FF)) < 0) // envia pids para shutdown
+	if ( (fila_pids = msgget(0x118785, IPC_CREAT|0x1FF)) < 0) // envia pids para shutdown
 	{
 		printf("Erro na criacao da fila 3\n");
 		exit(1);
@@ -85,7 +85,7 @@ void exclui_estruturas_compartilhadas()
 		printf("Erro na exclusao da fila 2\n");
 		exit(1);
 	}
-	if (msgctl(fila_3, IPC_RMID, NULL) < 0) // exclui fila 3 de pids
+	if (msgctl(fila_pids, IPC_RMID, NULL) < 0) // exclui fila 3 de pids
 	{
 		printf("Erro na exclusao da fila 3\n");
 		exit(1);
@@ -94,6 +94,18 @@ void exclui_estruturas_compartilhadas()
 	if (shmctl(id_mem, IPC_RMID, NULL) < 0)
 	{
 		printf("erro na exclusao da memoria compartilhada\n");
+		exit(1);
+	}
+}
+
+void envia_pid_shutdown()
+{
+	//Envia pid para o shutdown
+	msg_fila_pids.pid = getpid();
+	printf("pid = %ld", msg_fila_pids.pid);
+	if ((msgsnd(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0)) < 0)
+	{
+		printf("Erro no envio de mensagem na fila 3\n");
 		exit(1);
 	}
 }
@@ -170,21 +182,7 @@ bool aloca_frame(mensagem *msg)
 			numero_exec_substituicao++;
 			
 			Vsem(); // Libera Substituidor Semaforo deve começar com 0 permissoes
-			printf("Executa substituidor uma vez\n");
-			sleep(1);
-
-			/* NAO DEIXA PROCESSO BLOQUEADO
-			while(!(ptr_tabela->substituiu)) {} // Garante que não vai pegar Psem() antes do substituidor
-			*/
-
-			/* DEMORA DEMAIS
-			do {
-				ocupacao_tabela = 0;
-				for (i = 0; i < NUMERO_FRAMES; i++) {
-					if (!ptr_tabela->livre[i]) ocupacao_tabela++; 
-				}
-			} while(ocupacao_tabela >= MAX_OCUPACAO));*/
-			
+			sleep(1); // TRY: alarm ou pause
 			Psem();	// Fica bloqueado ate substituidor terminar
 		}
 		
@@ -217,6 +215,7 @@ bool aloca_frame(mensagem *msg)
 void executa_alocacao() {
 	numero_exec_substituicao = 0;
 	inicializa_tabela();
+
 	while (1) {
 		printf("Esperando mensagens...\n");
 		if ((msgrcv(fila_1, &msg_fila_1, sizeof(msg_fila_1)-sizeof(long), 0, 0)) < 0)
@@ -242,15 +241,7 @@ int main ()
 {
 	signal(SIGUSR1, shutdown_alocador);
 	cria_estruturas_compartilhadas();
-	
-	//Envia pid para o shutdown
-	msg_fila_3[0] = getpid();
-	printf("pid do alocador: %ld\n", msg_fila_3[0]);
-	if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
-	{
-		printf("Erro no envio de mensagem na fila 3\n");
-		exit(1);
-	}
+	envia_pid_shutdown();
 
 	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0); // Aloca tabela na memória compartilhada
 	if (ptr_tabela == (tabela *)-1) 

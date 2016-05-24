@@ -57,13 +57,25 @@ void obtem_estruturas_compartilhadas() {
 		exit(1);
 	}
 	//obtem fila de pids para shutdown
-	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) 
+	if ( (fila_pids = msgget(0x118785, 0x1FF)) < 0) 
 	{
 		printf("Erro na obtencao da fila 3\n");
 		exit(1);
 	}
 	return;
 
+}
+
+void envia_pid_shutdown()
+{
+	//Envia pid para o shutdown
+	msg_fila_pids.pid = getpid();
+	printf("pid = %ld\n", msg_fila_pids.pid);
+	if ((msgsnd(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0)) < 0)
+	{
+		printf("Erro no envio de mensagem na fila 3\n");
+		exit(1);
+	}
 }
 
 void executa_substituicao () {
@@ -126,21 +138,7 @@ void executa_substituicao () {
 int main () {
 	signal(SIGUSR1, shutdown_substituidor);
 	obtem_estruturas_compartilhadas();
-	
-	//recebe fila de pids
-	if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
-	{
-		printf("Erro na obtencao da mensagem na fila 3\n");
-		exit(1);
-	}
-	//envia pids para shutdown
-	msg_fila_3[1] = getpid();
-	printf("pid do substituidor: %ld\n", msg_fila_3[1]);
-	if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
-	{
-		printf("Erro no envio de mensagem na fila 3\n");
-		exit(1);
-	}
+	envia_pid_shutdown();
 
 	executa_substituicao();
 
