@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #define NUMERO_FRAMES 10 // TODO: Colocar tudo num .h soh
 #define OCUPACAO_OK 8
@@ -24,7 +25,7 @@ typedef struct tabela
 {
 	int pid[NUMERO_FRAMES];
 	bool livre[NUMERO_FRAMES];
-	char *pagina[NUMERO_FRAMES];
+	int pagina[NUMERO_FRAMES];
 	int tempo_de_referencia[NUMERO_FRAMES];
 } tabela;
 
@@ -98,17 +99,12 @@ void obtem_estruturas_compartilhadas() {
 }
 
 void executa_substituicao () {
-	int i, j=0, indice, tempo_maximo;
+	int i, j=0, k, indice, tempo_maximo;
 	int frames_livres = 0;
 
-	Psem();
+	//Psem();
 
 	while (1) {
-
-		// Block com Psem
-		printf("Bloqueado no semaforo\n");
-		Psem();
-		printf("Semaforo liberado pela %da vez\n", j++);
 
 		// Conta numero de frames livres
 		for (i = 0; i < NUMERO_FRAMES; i++) {
@@ -116,22 +112,46 @@ void executa_substituicao () {
 		}
 
 		// Armazena indice da tabela cujo tempo de referencia ah pagina eh o MAIOR
-		while (frames_livres <= NUMERO_FRAMES - OCUPACAO_OK) {
+		while (frames_livres < (NUMERO_FRAMES - OCUPACAO_OK)) {
+
+			printf("frames livres: %d\n", frames_livres);
+
+			// Block com Psem
+			printf("Bloqueado no semaforo\n");
+			Psem();
+			printf("Semaforo liberado pela %da vez\n", j++);
+
 			tempo_maximo = 0;
 			for (i = 0; i < NUMERO_FRAMES; i++) {
 				if (ptr_tabela->tempo_de_referencia[i] > tempo_maximo) {
 					tempo_maximo = ptr_tabela->tempo_de_referencia[i];
 					indice = i;
 				}
+
 			}
+			printf("indice = %d\n", indice);
 			frames_livres++;
 			ptr_tabela->pid[indice] = 0;
 			ptr_tabela->livre[indice] = true;
-			ptr_tabela->pagina[indice] = "-";
+			ptr_tabela->pagina[indice] = 9999;
 			ptr_tabela->tempo_de_referencia[indice] = -9999;
-		}
 
-		// Unlock com Vsem
+
+			// Imprime tabela
+			printf("\t i \t Pid \t Pagina \t Tempo de referecia\n");
+			for (k = 0; k < NUMERO_FRAMES; k++)
+			{
+				if (! ptr_tabela->livre[k])
+					printf("\t %d \t %d \t %d \t\t %d\n", k, ptr_tabela->pid[k], ptr_tabela->pagina[k], ptr_tabela->tempo_de_referencia[k]);
+				else printf("\t %d \t %d \t Livre\n", k, ptr_tabela->pid[k]);
+			}
+
+
+			// Unlock com Vsem
+			Vsem();
+			sleep(1);
+		}
+		frames_livres = 0;
 	}
 }
 

@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/msg.h>
 
 #define NUMERO_USUARIOS 4 // 5 usuarios
 #define NUMERO_FRAMES 10 // 5 page frames existem
@@ -144,12 +145,12 @@ void envia_pid_arquivo() {
 
 void imprime_tabela() {
 	int i;
-	printf("\t Pid \t Pagina \t Tempo de referecia\n");
+	printf(" i \t Pid \t Pagina \t Tempo de referecia\n");
 	for (i = 0; i < NUMERO_FRAMES; i++)
 	{
 		if (! ptr_tabela->livre[i])
-			printf("\t %d \t %d \t\t %d\n", ptr_tabela->pid[i], ptr_tabela->pagina[i], ptr_tabela->tempo_de_referencia[i]);
-		else printf("\t %d \t Livre\n", ptr_tabela->pid[i]);
+			printf(" %d \t %d \t %d \t\t %d\n", i, ptr_tabela->pid[i], ptr_tabela->pagina[i], ptr_tabela->tempo_de_referencia[i]);
+		else printf(" %d \t - \t Livre\n", i);
 	}
 }
 
@@ -228,7 +229,7 @@ bool aloca_frame(mensagem *msg)
 				}
 			} while(ocupacao_tabela >= MAX_OCUPACAO));*/
 			
-			// Psem();	// Fica bloqueado ate substituidor terminar
+			Psem();	// Fica bloqueado ate substituidor terminar
 		}
 		
 
