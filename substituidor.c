@@ -17,6 +17,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
+#include<sys/msg.h>
+#include <sys/types.h>
 
 #define NUMERO_FRAMES 10 // TODO: Colocar tudo num .h soh
 #define OCUPACAO_OK 8
@@ -32,6 +34,8 @@ typedef struct tabela
 struct tabela *ptr_tabela;
 struct sembuf op[2];
 int id_mem, id_sem;
+int fila_3;
+long msg_fila_3[7];
 
 void Psem()
 {
@@ -96,6 +100,13 @@ void obtem_estruturas_compartilhadas() {
 		printf("Erro na obtencao do semaforo\n");
 		exit(1);
 	}
+	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem fila 3
+	{
+		printf("Erro na obtencao da fila 3\n");
+		exit(1);
+	}
+	return;
+
 }
 
 void executa_substituicao () {
@@ -160,6 +171,21 @@ int main () {
 	envia_pid_arquivo();
 	obtem_estruturas_compartilhadas();
 	
+	if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
+	{
+		printf("Erro na obtencao da mensagem na fila 3\n");
+		exit(1);
+	}
+
+	msg_fila_3[1] = getpid();
+	printf("pid do substituidor: %ld\n", msg_fila_3[1]);
+	if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
+	{
+		printf("Erro no envio de mensagem na fila 3\n");
+		exit(1);
+	}
+	printf("Enviado: %ld\n", msg_fila_3[1]);
+
 	executa_substituicao();
 
 	return 0;

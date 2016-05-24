@@ -43,7 +43,8 @@ struct mensagem msg_fila_1, msg_fila_2;
 struct tabela *ptr_tabela;
 struct sembuf op[2];
 int id_sem, id_mem;
-int fila_1, fila_2;
+int fila_1, fila_2, fila_3;
+long msg_fila_3[7];
 
 int numero_page_faults[NUMERO_USUARIOS];
 int numero_page_faults_total;
@@ -91,6 +92,12 @@ void cria_estruturas_compartilhadas()
 		printf("Erro na criacao da fila 2\n");
 		exit(1);
 	}
+	if ( (fila_3 = msgget(0x118785, IPC_CREAT|0x1FF)) < 0) // envia pids para shutdown
+	{
+		printf("Erro na criacao da fila 3\n");
+		exit(1);
+
+	}
 	// Cria memoria compartilhada
 	if ((id_mem = shmget(0x89951, sizeof(int), IPC_CREAT|0x1FF)) < 0)
 	{
@@ -116,6 +123,11 @@ void exclui_estruturas_compartilhadas()
 	if (msgctl(fila_2, IPC_RMID, NULL) < 0) // envia resposta
 	{
 		printf("Erro na exclusao da fila 2\n");
+		exit(1);
+	}
+	if (msgctl(fila_3, IPC_RMID, NULL) < 0) // exclui fila 3 de pids
+	{
+		printf("Erro na exclusao da fila 3\n");
 		exit(1);
 	}
 	// Exclui memoria compartilhada
@@ -287,6 +299,14 @@ int main ()
 	signal(SIGUSR1, shutdown_alocador);
 	cria_estruturas_compartilhadas();
 	envia_pid_arquivo();
+
+	msg_fila_3[0] = getpid();
+	printf("pid do alocador: %ld\n", msg_fila_3[0]);
+	if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
+	{
+		printf("Erro no envio de mensagem na fila 3\n");
+		exit(1);
+	}
 
 	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0); // Aloca tabela na memória compartilhada
 	if (ptr_tabela == (tabela *)-1) 

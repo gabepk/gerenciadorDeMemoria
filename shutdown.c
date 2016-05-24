@@ -14,13 +14,42 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include<sys/ipc.h>
+#include<sys/msg.h>
 
 #define TAMANHO_LINHA 100
 
 int main ()
 {
-	// Recebe pids
 
+	int fila_3, i;
+	long msg_fila_3[7];	
+
+	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem a fila 3
+	{
+		printf("Erro na criacao da fila 3\n");
+		exit(1);
+	}
+
+	if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
+	{
+		printf("Erro na obtencao da mensagem na fila 3\n");
+		exit(1);
+	}
+	for(i=0;i<7;i++)
+	{
+		printf("msg_fila_3[%d]: %ld\n", i, msg_fila_3[i]);
+		//kill(msg_fila_3[i], SIGUSR1);
+	}
+
+	if (msgctl(fila_3, IPC_RMID, NULL) < 0) // exclui fila 3 de pids
+	{
+		printf("Erro na exclusao da fila 3\n");
+		exit(1);
+	}
+
+	// Recebe pids
+/*
 	FILE *fp;
 	int i = 0;
 	char linha[TAMANHO_LINHA], *token;
@@ -42,6 +71,6 @@ int main ()
 		}
 		paginas[i] = "\n";
 	}
-	fclose(fp);
+	fclose(fp);*/
 	return 0;
 }
