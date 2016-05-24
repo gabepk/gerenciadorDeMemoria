@@ -8,6 +8,7 @@
  *
  */
 
+#include "utils.h"
 #include "alocador.h"
 
 void Psem()
@@ -52,12 +53,12 @@ void cria_estruturas_compartilhadas()
 		printf("Erro na criacao da fila 2\n");
 		exit(1);
 	}
-	if ( (fila_3 = msgget(0x118785, IPC_CREAT|0x1FF)) < 0) // envia pids para shutdown
+	/*if ( (fila_3 = msgget(0x118785, IPC_CREAT|0x1FF)) < 0) // envia pids para shutdown
 	{
 		printf("Erro na criacao da fila 3\n");
 		exit(1);
 
-	}
+	}*/
 	// Cria memoria compartilhada
 	if ((id_mem = shmget(0x89951, sizeof(int), IPC_CREAT|0x1FF)) < 0)
 	{
@@ -85,11 +86,11 @@ void exclui_estruturas_compartilhadas()
 		printf("Erro na exclusao da fila 2\n");
 		exit(1);
 	}
-	if (msgctl(fila_3, IPC_RMID, NULL) < 0) // exclui fila 3 de pids
+	/*if (msgctl(fila_3, IPC_RMID, NULL) < 0) // exclui fila 3 de pids
 	{
 		printf("Erro na exclusao da fila 3\n");
 		exit(1);
-	}
+	}*/
 	// Exclui memoria compartilhada
 	if (shmctl(id_mem, IPC_RMID, NULL) < 0)
 	{
@@ -98,7 +99,7 @@ void exclui_estruturas_compartilhadas()
 	}
 }
 
-void imprime_tabela() 
+void imprime_tabela()  // MUDAR PARA SHUTDOWN
 {
 	int i;
 	printf(" i \t Pid \t Pagina \t Tempo de referecia\n");
@@ -110,11 +111,13 @@ void imprime_tabela()
 	}
 }
 
-void shutdown_alocador()
+void shutdown_alocador() // SOH MORRER. IMPRIMIR NO SHUTDOWN
 {
-	printf("Vou morrer\n");
-	int i;
+	int i = 0;
 	printf("\n\n");
+	while(numero_page_faults[i] != -1) {
+		printf("\t Numero de page faults do processo %d: %d\n", i, numero_page_faults[i]);
+	}
 	printf("\t Numero de page faults total: %d\n", numero_page_faults_total);
 	printf("\t Numero de execucoes do processo de substituicao: %d\n", numero_exec_substituicao);
 	printf("\t Configuracao final da memoria:\n");
@@ -214,7 +217,8 @@ bool aloca_frame(mensagem *msg)
 	return page_fault;
 }
 
-void executa_alocacao() {
+void executa_alocacao()
+{
 	numero_exec_substituicao = 0;
 	inicializa_tabela();
 	while (1) {
@@ -240,19 +244,25 @@ void executa_alocacao() {
 
 int main ()
 {
+	int i;
 	signal(SIGUSR1, shutdown_alocador);
 	cria_estruturas_compartilhadas();
 	
 	//Envia pid para o shutdown
-	msg_fila_3[0] = getpid();
+	/*msg_fila_3[0] = getpid();
 	printf("pid do alocador: %ld\n", msg_fila_3[0]);
 	if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
 	{
 		printf("Erro no envio de mensagem na fila 3\n");
 		exit(1);
-	}
+	}*/
 
-	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0); // Aloca tabela na memória compartilhada
+	// Inicializa vetor de numero de page faults
+	for (i = 0; i < NUMERO_USUARIOS; i++)
+		numero_page_faults[i] = -1;
+
+	// Aloca tabela na memória compartilhada
+	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0);
 	if (ptr_tabela == (tabela *)-1) 
 	{
 		printf("Erro no attach do ponteiro para a tabela de frames\n");

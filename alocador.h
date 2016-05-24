@@ -1,20 +1,3 @@
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
-#include <sys/shm.h>
-#include <signal.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/msg.h>
-
-#define NUMERO_USUARIOS 4 // 5 usuarios
-#define NUMERO_FRAMES 10 // 5 page frames existem
-#define MAX_OCUPACAO 9 // Se 9 frames existirem, ocorre substituicao
-#define OCUPACAO_OK 8 // Ocupação deve ser < 8
 
 typedef struct mensagem
 {
@@ -36,7 +19,6 @@ int id_sem, id_mem;
 int fila_1, fila_2, fila_3;
 long msg_fila_3[7];
 
-int numero_page_faults[NUMERO_USUARIOS];
 int numero_page_faults_total;
 int numero_exec_substituicao;
 

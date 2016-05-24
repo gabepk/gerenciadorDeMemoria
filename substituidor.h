@@ -1,17 +1,3 @@
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <unistd.h>
-#include<sys/msg.h>
-#include <sys/types.h>
-
-#define NUMERO_FRAMES 10 // TODO: Colocar tudo num .h soh
-#define OCUPACAO_OK 8
 
 typedef struct tabela
 {

@@ -8,6 +8,7 @@
  *
  */
 
+#include "utils.h"
 #include "substituidor.h"
 
 void Psem()
@@ -128,19 +129,19 @@ int main () {
 	obtem_estruturas_compartilhadas();
 	
 	//recebe fila de pids
-	if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
+	/*if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
 	{
 		printf("Erro na obtencao da mensagem na fila 3\n");
 		exit(1);
 	}
 	//envia pids para shutdown
-	msg_fila_3[1] = getpid();
+	msg_fila_3[1].pid = getpid();
 	printf("pid do substituidor: %ld\n", msg_fila_3[1]);
 	if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
 	{
 		printf("Erro no envio de mensagem na fila 3\n");
 		exit(1);
-	}
+	}*/
 
 	executa_substituicao();
 

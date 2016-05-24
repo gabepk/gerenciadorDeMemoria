@@ -8,7 +8,8 @@
  *
  */
 
-#include "shutdown.h"
+#include "utils.h" // Imprime as paradas
+#include "shutdown.h" // Vazia por enquanto
 
 int main ()
 {
@@ -16,7 +17,7 @@ int main ()
 	int fila_3, i=0;
 	long msg_fila_3[7];	
 
-	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem fila de pids para shutdown
+	/*if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem fila de pids para shutdown
 	{
 		printf("Erro na obtenca da fila 3\n");
 		exit(1);
@@ -39,7 +40,7 @@ int main ()
 	{
 		printf("Erro na exclusao da fila 3\n");
 		exit(1);
-	}
+	}*/
 
 	return 0;
 }

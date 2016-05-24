@@ -8,11 +8,13 @@
  *
  */
 
+#include "utils.h"
 #include "usuario.h"
 
 void shutdown_usuario () {
 	printf("\n\n");
-	printf("\t Numero de page faults do processo %s: %d\n", pid_logico, numero_page_faults);
+	// Numero de page faults soma + 1 na impressao, pois e inicializado com -1
+	printf("\t Numero de page faults do processo %s: %d\n", pid_logico, numero_page_faults[atoi(pid_logico) + 2] + 1);
 	exit(1);
 }
 
@@ -66,18 +68,18 @@ int main (int argc, char *argv[]) {
 			obtem_estruturas_compartilhadas();
 			
 			//recebe pids dos processos e envia para o shutdown	
-			if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
+			/*if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
 			{
 				printf("Erro na obtencao da mensagem na fila 3\n");
 				exit(1);
 			}
 	
-			msg_fila_3[atoi(pid_logico) + 2] = getpid();
+			msg_fila_3[atoi(pid_logico) + 2].pid = getpid();
 			if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
 			{
 				printf("Erro no envio de mensagem na fila 3\n");
 				exit(1);
-			}
+			}*/
 
 			// Envia paginas e recebe respostas
 			msg_fila_1.pid = getpid();
@@ -107,8 +109,8 @@ int main (int argc, char *argv[]) {
 				printf("Recebido = %s\n", msg_fila_2.pagina);
 
 				if (strstr(msg_fila_2.pagina, "fault") != NULL) {
-					numero_page_faults++;
-					printf("numero_page_faults = %d\n", numero_page_faults);
+					numero_page_faults[atoi(pid_logico) + 2]++;
+					printf("numero_page_faults = %d\n", numero_page_faults[atoi(pid_logico) + 2]);
 				}
 
 				i++;
