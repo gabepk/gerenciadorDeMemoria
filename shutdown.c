@@ -13,34 +13,11 @@
 
 int main ()
 {
-
-	int fila_3, i=0;
-	long msg_fila_3[7];	
-
-	/*if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem fila de pids para shutdown
-	{
-		printf("Erro na obtenca da fila 3\n");
-		exit(1);
+	int i = 0;
+	while(vetor_pids[i] != -1) {
+		printf("pid %d = %d", i, vetor_pids[i++]);
+		//kill(vetor_pids[i++], SIGUSR1);
 	}
-
-	if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0) //obtem os pids para shutdown
-	{
-		printf("Erro na obtencao da mensagem na fila 3\n");
-		exit(1);
-	}
-	//mata todos os processos em execucao
-	while(msg_fila_3[i] != 0)
-	{
-		printf("msg_fila_3[%d]: %ld\n", i, msg_fila_3[i]);
-		kill(msg_fila_3[i], SIGUSR1);
-		i++;
-	}
-
-	if (msgctl(fila_3, IPC_RMID, NULL) < 0) // exclui fila 3 de pids
-	{
-		printf("Erro na exclusao da fila 3\n");
-		exit(1);
-	}*/
 
 	return 0;
 }

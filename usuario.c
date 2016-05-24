@@ -14,7 +14,7 @@
 void shutdown_usuario () {
 	printf("\n\n");
 	// Numero de page faults soma + 1 na impressao, pois e inicializado com -1
-	printf("\t Numero de page faults do processo %s: %d\n", pid_logico, numero_page_faults[atoi(pid_logico) + 2] + 1);
+	printf("\t Numero de page faults do processo %d: %d\n", pid_logico, numero_page_faults[pid_logico + 2] + 1);
 	exit(1);
 }
 
@@ -30,11 +30,6 @@ void obtem_estruturas_compartilhadas() {
 		printf("Erro na obtencao do id da fila 2\n");
 		exit(1);
 	}
-	if ( (fila_3 = msgget(0x118785, 0x1FF)) < 0) // obtem fila de pids para shutdown
-	{
-		printf("Erro na obtencao da fila 3\n");
-		exit(1);
-	}
 	return;
 }
 
@@ -44,7 +39,10 @@ int main (int argc, char *argv[]) {
 	if (argc > 1)
 	{
 		// Pid logico que sera usado como indice na tabela de frames
-		pid_logico = strndup(argv[1]+13, 1);
+		pid_logico = atoi(strndup(argv[1]+13, 1));
+		
+		// Escreve pid em vetor global
+		vetor_pids[pid_logico + 2] = getpid();
 
 		FILE *fp;
 		fp = fopen(argv[1], "r");
@@ -66,20 +64,6 @@ int main (int argc, char *argv[]) {
 			paginas[i] = "\n";
 
 			obtem_estruturas_compartilhadas();
-			
-			//recebe pids dos processos e envia para o shutdown	
-			/*if ((msgrcv(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0, 0)) < 0)
-			{
-				printf("Erro na obtencao da mensagem na fila 3\n");
-				exit(1);
-			}
-	
-			msg_fila_3[atoi(pid_logico) + 2].pid = getpid();
-			if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
-			{
-				printf("Erro no envio de mensagem na fila 3\n");
-				exit(1);
-			}*/
 
 			// Envia paginas e recebe respostas
 			msg_fila_1.pid = getpid();
@@ -99,8 +83,8 @@ int main (int argc, char *argv[]) {
 				}
 				printf("Enviado: %s\n", msg_fila_1.pagina);
 
-				sleep(3);
-				
+				sleep(2);
+			
 				if ( msgrcv(fila_2, &msg_fila_2, sizeof(msg_fila_2)-sizeof(long), 0, 0) < 0)
 				{
 					printf("Erro na obtencao da mensagem na fila 2\n");
@@ -109,8 +93,8 @@ int main (int argc, char *argv[]) {
 				printf("Recebido = %s\n", msg_fila_2.pagina);
 
 				if (strstr(msg_fila_2.pagina, "fault") != NULL) {
-					numero_page_faults[atoi(pid_logico) + 2]++;
-					printf("numero_page_faults = %d\n", numero_page_faults[atoi(pid_logico) + 2]);
+					numero_page_faults[pid_logico + 2]++;
+					printf("numero_page_faults = %d\n", numero_page_faults[pid_logico + 2]);
 				}
 
 				i++;

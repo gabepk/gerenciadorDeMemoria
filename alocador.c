@@ -53,12 +53,6 @@ void cria_estruturas_compartilhadas()
 		printf("Erro na criacao da fila 2\n");
 		exit(1);
 	}
-	/*if ( (fila_3 = msgget(0x118785, IPC_CREAT|0x1FF)) < 0) // envia pids para shutdown
-	{
-		printf("Erro na criacao da fila 3\n");
-		exit(1);
-
-	}*/
 	// Cria memoria compartilhada
 	if ((id_mem = shmget(0x89951, sizeof(int), IPC_CREAT|0x1FF)) < 0)
 	{
@@ -86,11 +80,6 @@ void exclui_estruturas_compartilhadas()
 		printf("Erro na exclusao da fila 2\n");
 		exit(1);
 	}
-	/*if (msgctl(fila_3, IPC_RMID, NULL) < 0) // exclui fila 3 de pids
-	{
-		printf("Erro na exclusao da fila 3\n");
-		exit(1);
-	}*/
 	// Exclui memoria compartilhada
 	if (shmctl(id_mem, IPC_RMID, NULL) < 0)
 	{
@@ -172,22 +161,10 @@ bool aloca_frame(mensagem *msg)
 			printf("Nao tem espaco. Libera uma frame.\n");
 			numero_exec_substituicao++;
 			
-			Vsem(); // Libera Substituidor Semaforo deve começar com 0 permissoes
-			printf("Executa substituidor uma vez\n");
-			sleep(1);
+			Vsem(); // Libera Substituidor Semaforo
 
-			/* NAO DEIXA PROCESSO BLOQUEADO
-			while(!(ptr_tabela->substituiu)) {} // Garante que não vai pegar Psem() antes do substituidor
-			*/
+			sleep(1); // ... Certeza que essa solucao eh horrivel. TRY: alarm ou pause
 
-			/* DEMORA DEMAIS
-			do {
-				ocupacao_tabela = 0;
-				for (i = 0; i < NUMERO_FRAMES; i++) {
-					if (!ptr_tabela->livre[i]) ocupacao_tabela++; 
-				}
-			} while(ocupacao_tabela >= MAX_OCUPACAO));*/
-			
 			Psem();	// Fica bloqueado ate substituidor terminar
 		}
 		
@@ -247,19 +224,14 @@ int main ()
 	int i;
 	signal(SIGUSR1, shutdown_alocador);
 	cria_estruturas_compartilhadas();
-	
-	//Envia pid para o shutdown
-	/*msg_fila_3[0] = getpid();
-	printf("pid do alocador: %ld\n", msg_fila_3[0]);
-	if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
-	{
-		printf("Erro no envio de mensagem na fila 3\n");
-		exit(1);
-	}*/
 
-	// Inicializa vetor de numero de page faults
-	for (i = 0; i < NUMERO_USUARIOS; i++)
+	// Inicializa vetores globais
+	vetor_pids[0] = getpid(); // Escreve proprio pid em vetor global
+	vetor_pids[1] = -1; // Inicializa pid do substituidor
+	for (i = 0; i < NUMERO_USUARIOS; i++) {
 		numero_page_faults[i] = -1;
+		vetor_pids[i+2] = -1; // Inicializa pid dos usuarios
+	}
 
 	// Aloca tabela na memória compartilhada
 	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0);

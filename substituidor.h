@@ -10,8 +10,6 @@ typedef struct tabela
 struct tabela *ptr_tabela;
 struct sembuf op[2];
 int id_mem, id_sem;
-int fila_3;
-long msg_fila_3[7];
 
 //Prototipos de funcoes
 void Psem();
