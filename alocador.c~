@@ -120,7 +120,7 @@ void shutdown_alocador()
 	printf("\t Configuracao final da memoria:\n");
 	
 	imprime_tabela();
-	exclui_estruturas_compartilhadas();
+	//exclui_estruturas_compartilhadas();
 	exit(1);
 }
 

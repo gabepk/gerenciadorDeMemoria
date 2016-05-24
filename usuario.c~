@@ -73,6 +73,7 @@ int main (int argc, char *argv[]) {
 			}
 	
 			msg_fila_3[atoi(pid_logico) + 2] = getpid();
+			printf("pid do usuario[%d]: %ld\n", p, msg_fila_3[p]);
 			if ((msgsnd(fila_3, &msg_fila_3, sizeof(msg_fila_3)-sizeof(long), 0)) < 0)
 			{
 				printf("Erro no envio de mensagem na fila 3\n");
