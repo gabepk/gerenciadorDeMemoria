@@ -10,4 +10,5 @@ void Psem();
 void Vsem();
 void shutdown_substituidor ();
 void obtem_estruturas_compartilhadas();
+void envia_pid_shutdown();
 void executa_substituicao ();

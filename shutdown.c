@@ -49,12 +49,14 @@ void obtem_estruturas_compartilhadas()
 
 void imprime_resultado()
 {
-	int i, numero_page_faults_total=0;
+	int i=0, numero_page_faults_total=0;
 
 	printf("\n\n");
 	while(ptr_result->numero_page_faults[i] != -1)  {
-		printf("\t Numero de page faults do processo %d: %d\n", i, ptr_result->numero_page_faults[i]);
-		numero_page_faults_total += ptr_result->numero_page_faults[i];
+		// Numero de page faults eh somado com 1 pois eh inicializado com -1
+		printf("\t Numero de page faults do processo %d: %d\n", i, ptr_result->numero_page_faults[i] + 1);
+		numero_page_faults_total += ptr_result->numero_page_faults[i] + 1;
+		i++;
 	}
 
 	printf("\t Numero de page faults total: %d\n", numero_page_faults_total);
@@ -67,6 +69,7 @@ void imprime_resultado()
 			printf("\t %d \t %d \t\t %d\n", ptr_tabela->pid[i], ptr_tabela->pagina[i], ptr_tabela->tempo_de_referencia[i]);
 		else printf("\t - \t Livre\n");
 	}
+	printf("\n\n");
 	return;
 }
 
@@ -75,20 +78,11 @@ int main ()
 	int i=0, result=1;
 	obtem_estruturas_compartilhadas();
 
-	while(result != 0) { // TODO Alterar esse loop, pra nao dar erro de result < 0 sem necessidade
+	result = msgrcv(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0, IPC_NOWAIT);
+	while(result > 0) {
+		kill(msg_fila_pids.pid, SIGUSR1);
 
 		result = msgrcv(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0, IPC_NOWAIT);
-		printf("result = %d\t", result);
-		printf("pid = %ld\n", msg_fila_pids.pid);
-
-		if(result < 0)
-		{
-			printf("Erro na obtencao da mensagem na fila de pids\n");
-			exit(1);
-		}
-		else if (result > 0) {
-			kill(msg_fila_pids.pid, SIGUSR1);
-		}
 	}
 
 	imprime_resultado();

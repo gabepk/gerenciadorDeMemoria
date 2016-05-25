@@ -51,7 +51,7 @@ void envia_pid_shutdown()
 {
 	//Envia pid para o shutdown
 	msg_fila_pids.pid = getpid();
-	printf("pid = %ld\n", msg_fila_pids.pid);
+	printf("\nPID: %ld\n", msg_fila_pids.pid);
 	if ((msgsnd(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0)) < 0)
 	{
 		printf("Erro no envio de mensagem na fila 3\n");
@@ -104,7 +104,7 @@ int main (int argc, char *argv[]) {
 					printf("Erro no envio da pagina %s do processo %ld\n", msg_fila_1.pagina, msg_fila_1.pid);
 					exit(1);
 				}
-				printf("Enviado: %s\n", msg_fila_1.pagina);
+				printf("Enviado: %ld \t %s\n", msg_fila_1.pid, msg_fila_1.pagina);
 
 				sleep(3);
 				
@@ -113,11 +113,10 @@ int main (int argc, char *argv[]) {
 					printf("Erro na obtencao da mensagem na fila 2\n");
 					exit(1);
 				}
-				printf("Recebido = %s\n", msg_fila_2.pagina);
+				printf("Recebido = %ld \t %s\n", msg_fila_2.pid, msg_fila_2.pagina);
 
 				if (strstr(msg_fila_2.pagina, "fault") != NULL) {
 					ptr_result->numero_page_faults[pid_logico]++;
-					printf("numero_page_faults = %d\n", ptr_result->numero_page_faults[pid_logico]);
 				}
 
 				i++;

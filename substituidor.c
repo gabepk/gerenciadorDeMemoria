@@ -83,7 +83,7 @@ void envia_pid_shutdown()
 {
 	//Envia pid para o shutdown
 	msg_fila_pids.pid = getpid();
-	printf("pid = %ld\n", msg_fila_pids.pid);
+	printf("\nPID: %ld\n", msg_fila_pids.pid);
 	if ((msgsnd(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0)) < 0)
 	{
 		printf("Erro no envio de mensagem na fila 3\n");
@@ -105,12 +105,12 @@ void executa_substituicao () {
 		// Armazena indice da tabela cujo tempo de referencia ah pagina eh o MAIOR
 		while (frames_livres < (NUMERO_FRAMES - OCUPACAO_OK)) {
 			// Block com Psem
-			printf("Bloqueado no semaforo\n");
+			printf("Bloqueado\n");
 			Psem();
 
 			// Incrementa numero de substituicoes que ocorreram
 			ptr_result->numero_exec_substituicao ++;
-			printf("Semaforo liberado pela %da vez\n", ptr_result->numero_exec_substituicao);
+			printf("Executou substituicao pela %da vez\n", ptr_result->numero_exec_substituicao);
 
 			// Encontra frame "least recently used"
 			tempo_maximo = 0;

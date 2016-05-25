@@ -8,4 +8,5 @@ int id_num, numero_page_faults = 0;
 //Prototipos de funcoes
 void shutdown_usuario ();
 void obtem_estruturas_compartilhadas();
+void envia_pid_shutdown();
 

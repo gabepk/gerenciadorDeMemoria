@@ -81,7 +81,7 @@ void cria_estruturas_compartilhadas()
 	ptr_result = (numeros_resultado *) shmat(id_num, (char *)0, 0);
 	if (ptr_result == (numeros_resultado *)-1) 
 	{
-		printf("Erro no attach do ponteiro para a tabela de frames\n");
+		printf("Erro no attach do ponteiro para a struct numeros_resutlado\n");
 		exit(1);
 	}
 }
@@ -110,10 +110,15 @@ void exclui_estruturas_compartilhadas()
 		printf("Erro na exclusao da fila de pids\n");
 		exit(1);
 	}
-	// Exclui memoria compartilhada
+	// Exclui memorias compartilhadas
 	if (shmctl(id_tab, IPC_RMID, NULL) < 0)
 	{
-		printf("erro na exclusao da memoria compartilhada\n");
+		printf("erro na exclusao da memoria compartilhada da tabela \n");
+		exit(1);
+	}
+	if (shmctl(id_num, IPC_RMID, NULL) < 0)
+	{
+		printf("erro na exclusao da memoria compartilhada da struct numeros_resutlado\n");
 		exit(1);
 	}
 }
@@ -122,6 +127,7 @@ void envia_pid_shutdown()
 {
 	//Envia pid para o shutdown
 	msg_fila_pids.pid = getpid();
+	printf("\nPID: %ld\n", msg_fila_pids.pid);
 	if ((msgsnd(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0)) < 0)
 	{
 		printf("Erro no envio de mensagem na fila de pids\n");
@@ -182,7 +188,7 @@ bool aloca_frame(mensagem *msg)
 		{
 			printf("Nao tem espaco. Libera uma frame.\n");
 			Vsem(); // Libera Substituidor Semaforo deve começar com 0 permissoes
-			sleep(1); // TRY: alarm ou pause
+			sleep(1); // TODO: alarm ou pause
 			Psem();	// Fica bloqueado ate substituidor terminar
 		}
 		
@@ -212,13 +218,12 @@ bool aloca_frame(mensagem *msg)
 void executa_alocacao() {
 
 	while (1) {
-		printf("Esperando mensagens...\n");
 		if ((msgrcv(fila_1, &msg_fila_1, sizeof(msg_fila_1)-sizeof(long), 0, 0)) < 0)
 		{
 			printf("Erro na obtencao da mensagem na fila 1\n");
 			exit(1);
 		}
-		printf("Pid: %ld e Pag = %s \n", msg_fila_1.pid, msg_fila_1.pagina);
+		printf("Recebido: %ld \t %s \n", msg_fila_1.pid, msg_fila_1.pagina);
 
 		msg_fila_2.pid = msg_fila_1.pid;
 		strcpy(msg_fila_2.pagina, aloca_frame(&msg_fila_1) ? "Page fault" : "Page found");
@@ -228,6 +233,7 @@ void executa_alocacao() {
 			printf("Erro no envio de mensagem na fila 2\n");
 			exit(1);
 		}
+		printf("Enviado: %ld \t %s \n", msg_fila_2.pid, msg_fila_2.pagina);
 	}
 	return;
 }
