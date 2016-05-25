@@ -8,11 +8,35 @@
  *
  */
 
+#include "utils.h"
 #include "shutdown.h"
 
-int main ()
+void obtem_estruturas_compartilhadas()
 {
-	int i=0, result=1;
+	// Obtem tabela
+	if ((id_tab = shmget(0x89951, sizeof(int), 0x1FF)) < 0)
+	{
+		printf("Erro na obtencao da memoria compartilhada da tabela\n");
+		exit(1);
+	}
+	ptr_tabela = (tabela *) shmat(id_tab, (char *)0, 0);
+	if (ptr_tabela == (tabela *)-1) 
+	{
+		printf("Erro no attach do ponteiro para a tabela de frames\n");
+		exit(1);
+	}
+	// Obtem numeros_resultado
+	if ((id_num = shmget(0x678500, sizeof(int), 0x1FF)) < 0)
+	{
+		printf("erro na criacao da memoria compartilhada para struct numeros_resutlado \n");
+		exit(1);
+	}
+	ptr_result = (numeros_resultado *) shmat(id_num, (char *)0, 0);
+	if (ptr_result == (numeros_resultado *)-1) 
+	{
+		printf("Erro no attach do ponteiro para a struct numeros_resutlado\n");
+		exit(1);
+	}
 
 	// Obtem fila de pids para shutdown
 	if ( (fila_pids = msgget(0x118785, 0x1FF)) < 0)
@@ -20,6 +44,36 @@ int main ()
 		printf("Erro na obtenca da fila de pids\n");
 		exit(1);
 	}
+	return;
+}
+
+void imprime_resultado()
+{
+	int i, numero_page_faults_total=0;
+
+	printf("\n\n");
+	while(ptr_result->numero_page_faults[i] != -1)  {
+		printf("\t Numero de page faults do processo %d: %d\n", i, ptr_result->numero_page_faults[i]);
+		numero_page_faults_total += ptr_result->numero_page_faults[i];
+	}
+
+	printf("\t Numero de page faults total: %d\n", numero_page_faults_total);
+	printf("\t Numero de execucoes do processo de substituicao: %d\n", ptr_result->numero_exec_substituicao);
+	printf("\t Configuracao final da memoria:\n");
+	printf("\t Pid \t Pagina \t Tempo de referecia\n");
+	for (i = 0; i < NUMERO_FRAMES; i++)
+	{
+		if (! ptr_tabela->livre[i])
+			printf("\t %d \t %d \t\t %d\n", ptr_tabela->pid[i], ptr_tabela->pagina[i], ptr_tabela->tempo_de_referencia[i]);
+		else printf("\t - \t Livre\n");
+	}
+	return;
+}
+
+int main ()
+{
+	int i=0, result=1;
+	obtem_estruturas_compartilhadas();
 
 	while(result != 0) { // TODO Alterar esse loop, pra nao dar erro de result < 0 sem necessidade
 
@@ -37,6 +91,7 @@ int main ()
 		}
 	}
 
+	imprime_resultado();
 
 	return 0;
 }

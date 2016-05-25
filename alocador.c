@@ -8,6 +8,7 @@
  *
  */
 
+#include "utils.h"
 #include "alocador.h"
 
 void Psem()
@@ -54,14 +55,33 @@ void cria_estruturas_compartilhadas()
 	}
 	if ( (fila_pids = msgget(0x118785, IPC_CREAT|0x1FF)) < 0) // envia pids para shutdown
 	{
-		printf("Erro na criacao da fila 3\n");
+		printf("Erro na criacao da fila de pids\n");
 		exit(1);
 
 	}
-	// Cria memoria compartilhada
-	if ((id_mem = shmget(0x89951, sizeof(int), IPC_CREAT|0x1FF)) < 0)
+	// Cria memoria compartilhada da tabela
+	if ((id_tab = shmget(0x89951, sizeof(int), IPC_CREAT|0x1FF)) < 0)
 	{
 		printf("erro na criacao da memoria compartilhada para tabela\n");
+		exit(1);
+	}
+	// Aloca tabela na memória compartilhada
+	ptr_tabela = (tabela *) shmat(id_tab, (char *)0, 0);
+	if (ptr_tabela == (tabela *)-1) 
+	{
+		printf("Erro no attach do ponteiro para a tabela de frames\n");
+		exit(1);
+	}
+	//  Cria memoria compartilhada da struct numero_resultado
+	if ((id_num = shmget(0x678500, sizeof(int), IPC_CREAT|0x1FF)) < 0)
+	{
+		printf("erro na criacao da memoria compartilhada para struct numeros_resutlado \n");
+		exit(1);
+	}
+	ptr_result = (numeros_resultado *) shmat(id_num, (char *)0, 0);
+	if (ptr_result == (numeros_resultado *)-1) 
+	{
+		printf("Erro no attach do ponteiro para a tabela de frames\n");
 		exit(1);
 	}
 }
@@ -87,11 +107,11 @@ void exclui_estruturas_compartilhadas()
 	}
 	if (msgctl(fila_pids, IPC_RMID, NULL) < 0) // exclui fila 3 de pids
 	{
-		printf("Erro na exclusao da fila 3\n");
+		printf("Erro na exclusao da fila de pids\n");
 		exit(1);
 	}
 	// Exclui memoria compartilhada
-	if (shmctl(id_mem, IPC_RMID, NULL) < 0)
+	if (shmctl(id_tab, IPC_RMID, NULL) < 0)
 	{
 		printf("erro na exclusao da memoria compartilhada\n");
 		exit(1);
@@ -102,41 +122,20 @@ void envia_pid_shutdown()
 {
 	//Envia pid para o shutdown
 	msg_fila_pids.pid = getpid();
-	printf("pid = %ld", msg_fila_pids.pid);
 	if ((msgsnd(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0)) < 0)
 	{
-		printf("Erro no envio de mensagem na fila 3\n");
+		printf("Erro no envio de mensagem na fila de pids\n");
 		exit(1);
-	}
-}
-
-void imprime_tabela() 
-{
-	int i;
-	printf(" i \t Pid \t Pagina \t Tempo de referecia\n");
-	for (i = 0; i < NUMERO_FRAMES; i++)
-	{
-		if (! ptr_tabela->livre[i])
-			printf(" %d \t %d \t %d \t\t %d\n", i, ptr_tabela->pid[i], ptr_tabela->pagina[i], ptr_tabela->tempo_de_referencia[i]);
-		else printf(" %d \t - \t Livre\n", i);
 	}
 }
 
 void shutdown_alocador()
 {
-	printf("Vou morrer\n");
-	int i;
-	printf("\n\n");
-	printf("\t Numero de page faults total: %d\n", numero_page_faults_total);
-	printf("\t Numero de execucoes do processo de substituicao: %d\n", numero_exec_substituicao);
-	printf("\t Configuracao final da memoria:\n");
-	
-	imprime_tabela();
 	exclui_estruturas_compartilhadas();
 	exit(1);
 }
 
-void inicializa_tabela()
+void inicializa_memorias_compartilhadas()
 {
 	int i;
 	for (i = 0; i < NUMERO_FRAMES; i++) {
@@ -145,6 +144,11 @@ void inicializa_tabela()
 		ptr_tabela->pagina[i] = 9999;
 		ptr_tabela->tempo_de_referencia[i] = -9999;
 	}
+	for(i = 0; i < NUMERO_USUARIOS; i++) {
+		ptr_result->numero_page_faults[i] = -1;
+	}
+	ptr_result->numero_exec_substituicao = 0;
+
 	return;
 }
 
@@ -172,15 +176,11 @@ bool aloca_frame(mensagem *msg)
 
 	// Se nao estah, houve page fault
 	if(page_fault) {
-		numero_page_faults_total++;
-
 		printf("Page Fault. Ocupacao: %d\n", ocupacao_tabela);
 		
 		if (ocupacao_tabela >= MAX_OCUPACAO)
 		{
 			printf("Nao tem espaco. Libera uma frame.\n");
-			numero_exec_substituicao++;
-			
 			Vsem(); // Libera Substituidor Semaforo deve começar com 0 permissoes
 			sleep(1); // TRY: alarm ou pause
 			Psem();	// Fica bloqueado ate substituidor terminar
@@ -202,9 +202,6 @@ bool aloca_frame(mensagem *msg)
 			}
 		}
 	}
-	printf("\n");
-	imprime_tabela();
-	printf("\n");
 	// Incrementa tempo de referencia de todas as paginas
 	for (i = 0; i < NUMERO_FRAMES; i++)
 		ptr_tabela->tempo_de_referencia[i]++;
@@ -213,8 +210,6 @@ bool aloca_frame(mensagem *msg)
 }
 
 void executa_alocacao() {
-	numero_exec_substituicao = 0;
-	inicializa_tabela();
 
 	while (1) {
 		printf("Esperando mensagens...\n");
@@ -242,14 +237,7 @@ int main ()
 	signal(SIGUSR1, shutdown_alocador);
 	cria_estruturas_compartilhadas();
 	envia_pid_shutdown();
-
-	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0); // Aloca tabela na memória compartilhada
-	if (ptr_tabela == (tabela *)-1) 
-	{
-		printf("Erro no attach do ponteiro para a tabela de frames\n");
-		exit(1);
-	}
-
+	inicializa_memorias_compartilhadas();
 	executa_alocacao();
 
 	return 0;

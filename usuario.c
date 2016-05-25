@@ -8,15 +8,26 @@
  *
  */
 
+#include "utils.h"
 #include "usuario.h"
 
 void shutdown_usuario () {
-	printf("\n\n");
-	printf("\t Numero de page faults do processo %s: %d\n", pid_logico, numero_page_faults);
 	exit(1);
 }
 
 void obtem_estruturas_compartilhadas() {
+	// Obtem numeros_resultado
+	if ((id_num = shmget(0x678500, sizeof(int), 0x1FF)) < 0)
+	{
+		printf("erro na criacao da memoria compartilhada para struct numeros_resutlado \n");
+		exit(1);
+	}
+	ptr_result = (numeros_resultado *) shmat(id_num, (char *)0, 0);
+	if (ptr_result == (numeros_resultado *)-1) 
+	{
+		printf("Erro no attach do ponteiro para a struct numeros_resutlado\n");
+		exit(1);
+	}
 	// Obtem filas de mensagens
 	if ((fila_1 = msgget(0x126785, 0x1FF)) < 0) // referencia_pagina
 	{
@@ -28,9 +39,9 @@ void obtem_estruturas_compartilhadas() {
 		printf("Erro na obtencao do id da fila 2\n");
 		exit(1);
 	}
-	if ( (fila_pids = msgget(0x118785, 0x1FF)) < 0) // obtem fila de pids para shutdown
+	if ( (fila_pids = msgget(0x118785, 0x1FF)) < 0)
 	{
-		printf("Erro na obtencao da fila 3\n");
+		printf("Erro na obtenca da fila de pids\n");
 		exit(1);
 	}
 	return;
@@ -54,7 +65,7 @@ int main (int argc, char *argv[]) {
 	if (argc > 1)
 	{
 		// Pid logico que sera usado como indice na tabela de frames
-		pid_logico = strndup(argv[1]+13, 1);
+		pid_logico = atoi(strndup(argv[1]+13, 1));
 
 		FILE *fp;
 		fp = fopen(argv[1], "r");
@@ -105,15 +116,14 @@ int main (int argc, char *argv[]) {
 				printf("Recebido = %s\n", msg_fila_2.pagina);
 
 				if (strstr(msg_fila_2.pagina, "fault") != NULL) {
-					numero_page_faults++;
-					printf("numero_page_faults = %d\n", numero_page_faults);
+					ptr_result->numero_page_faults[pid_logico]++;
+					printf("numero_page_faults = %d\n", ptr_result->numero_page_faults[pid_logico]);
 				}
 
 				i++;
 			}
 
 			fclose(fp);
-			shutdown_usuario();
 		}
 		else
 		{

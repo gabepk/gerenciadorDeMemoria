@@ -8,6 +8,7 @@
  *
  */
 
+#include "utils.h"
 #include "substituidor.h"
 
 void Psem()
@@ -37,17 +38,30 @@ void shutdown_substituidor () {
 	exit(1);
 }
 
-void obtem_estruturas_compartilhadas() {
+void obtem_estruturas_compartilhadas()
+{
 	// Obtem memoria compartilhada
-	if ((id_mem = shmget(0x89951, sizeof(int), 0x1FF)) < 0)
+	if ((id_tab = shmget(0x89951, sizeof(int), 0x1FF)) < 0)
 	{
 		printf("Erro na obtencao da memoria compartilhada\n");
 		exit(1);
 	}
-	ptr_tabela = (tabela *) shmat(id_mem, (char *)0, 0);
+	ptr_tabela = (tabela *) shmat(id_tab, (char *)0, 0);
 	if (ptr_tabela == (tabela *)-1) 
 	{
 		printf("Erro no attach do ponteiro para a tabela de frames\n");
+		exit(1);
+	}
+	// Obtem numeros_resultado
+	if ((id_num = shmget(0x678500, sizeof(int), 0x1FF)) < 0)
+	{
+		printf("erro na criacao da memoria compartilhada para struct numeros_resutlado \n");
+		exit(1);
+	}
+	ptr_result = (numeros_resultado *) shmat(id_num, (char *)0, 0);
+	if (ptr_result == (numeros_resultado *)-1) 
+	{
+		printf("Erro no attach do ponteiro para a struct numeros_resutlado\n");
 		exit(1);
 	}
 	// Obtem semaforos
@@ -57,13 +71,12 @@ void obtem_estruturas_compartilhadas() {
 		exit(1);
 	}
 	//obtem fila de pids para shutdown
-	if ( (fila_pids = msgget(0x118785, 0x1FF)) < 0) 
+	if ( (fila_pids = msgget(0x118785, 0x1FF)) < 0)
 	{
-		printf("Erro na obtencao da fila 3\n");
+		printf("Erro na obtenca da fila de pids\n");
 		exit(1);
 	}
 	return;
-
 }
 
 void envia_pid_shutdown()
@@ -82,8 +95,6 @@ void executa_substituicao () {
 	int i, j=0, k, indice, tempo_maximo;
 	int frames_livres = 0;
 
-	//Psem();
-
 	while (1) {
 
 		// Conta numero de frames livres
@@ -93,14 +104,15 @@ void executa_substituicao () {
 
 		// Armazena indice da tabela cujo tempo de referencia ah pagina eh o MAIOR
 		while (frames_livres < (NUMERO_FRAMES - OCUPACAO_OK)) {
-
-			printf("frames livres: %d\n", frames_livres);
-
 			// Block com Psem
 			printf("Bloqueado no semaforo\n");
 			Psem();
-			printf("Semaforo liberado pela %da vez\n", j++);
 
+			// Incrementa numero de substituicoes que ocorreram
+			ptr_result->numero_exec_substituicao ++;
+			printf("Semaforo liberado pela %da vez\n", ptr_result->numero_exec_substituicao);
+
+			// Encontra frame "least recently used"
 			tempo_maximo = 0;
 			for (i = 0; i < NUMERO_FRAMES; i++) {
 				if (ptr_tabela->tempo_de_referencia[i] > tempo_maximo) {
@@ -109,23 +121,12 @@ void executa_substituicao () {
 				}
 
 			}
-			printf("indice = %d\n", indice);
+			// Libera a frame
 			frames_livres++;
 			ptr_tabela->pid[indice] = 0;
 			ptr_tabela->livre[indice] = true;
 			ptr_tabela->pagina[indice] = 9999;
 			ptr_tabela->tempo_de_referencia[indice] = -9999;
-
-
-			// Imprime tabela
-			printf("\t i \t Pid \t Pagina \t Tempo de referecia\n");
-			for (k = 0; k < NUMERO_FRAMES; k++)
-			{
-				if (! ptr_tabela->livre[k])
-					printf("\t %d \t %d \t %d \t\t %d\n", k, ptr_tabela->pid[k], ptr_tabela->pagina[k], ptr_tabela->tempo_de_referencia[k]);
-				else printf("\t %d \t %d \t Livre\n", k, ptr_tabela->pid[k]);
-			}
-
 
 			// Unlock com Vsem
 			Vsem();
