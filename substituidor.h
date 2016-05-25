@@ -1,3 +1,5 @@
+#include <sys/sem.h>
+
 struct numeros_resultado *ptr_result;
 struct mensagem msg_fila_pids;
 struct tabela *ptr_tabela;

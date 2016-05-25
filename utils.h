@@ -12,8 +12,8 @@
 #include <sys/msg.h>
 
 #define TAMANHO_LINHA 100
-#define NUMERO_USUARIOS 4 // 5 usuarios
-#define NUMERO_FRAMES 10 // 5 page frames existem
+#define NUMERO_USUARIOS 5
+#define NUMERO_FRAMES 10
 #define MAX_OCUPACAO 9 // Se 9 frames existirem, ocorre substituicao
 #define OCUPACAO_OK 8 // Ocupação deve ser < 8
 

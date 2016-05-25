@@ -113,7 +113,7 @@ int main (int argc, char *argv[]) {
 					printf("Erro na obtencao da mensagem na fila 2\n");
 					exit(1);
 				}
-				printf("Recebido = %ld \t %s\n", msg_fila_2.pid, msg_fila_2.pagina);
+				printf("Recebido: %ld \t %s\n", msg_fila_2.pid, msg_fila_2.pagina);
 
 				if (strstr(msg_fila_2.pagina, "fault") != NULL) {
 					ptr_result->numero_page_faults[pid_logico]++;

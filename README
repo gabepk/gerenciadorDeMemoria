@@ -2,26 +2,45 @@ Sistemas Operacionais - professora Alba Cristina
    Gabriella de Oliveira Esteves - 110118995
    Naiara Watanabe - 090126785
  
-   Ubuntu - versao 14.04 LTS e 14.10 (máquina virtual)
+   Ubuntu - versao 14.04 LTS
+	  - versao 14.10 (máquina virtual)
    GCC - versao 4.8.4 e 4.9.2
- 
-1) Eh necessario rodar na seguinte ordem: alocador -> substituidor -> usuario -> shutdown (se quiser)
+__________________________________________________________________________________________________________________________
+
+1) Eh necessario rodar na seguinte ordem: alocador -> substituidor -> usuario (1 à 5) -> shutdown
+__________________________________________________________________________________________________________________________
 
 2) Comandos:
 	gcc alocador.c alocador.h -o alocador
 	./alocador
+
 	gcc substituidor.c substituidor.h -o substituidor
 	./substituidor
+
 	gcc usuario.c usuario.h -o usuario
-	./usuario pag_processo_1.txt (por exemplo)
+	./usuario pag_processo_0.txt
+	./usuario pag_processo_1.txt
+		...
+	./usuario pag_processo_5.txt
+
 	gcc shutdown.c shutdown.h -o shutdown
 	./shutdown
+__________________________________________________________________________________________________________________________
 
-3) Foi implementado o LRU para a substituicao de paginas, porem na tabela final eh mostrado o tempo de referência invertido, ou seja, o menor tempo eh referente a página que acabou de ser solicitada e o maior tempo eh da página que foi "least recently used".
+3) Assumimos que:
+	* Numero de frames maxima é 10
+	* Numero de usuários maximo é 5
+	* Arquivo texto que acompanha ./usuario deve sempre terminar com um digito antes de ".txt", pois este será seu pid_logico no codigo
+__________________________________________________________________________________________________________________________
 
-4) * Foi utilizado semaforos para bloquear a escrita na tabela invertida
-   * Foi utilizado fila de mensagens (fila 1 e 2) entre alocador e usuario, para referenciar a pagina e receber resposta, respectivamente.
-   * Foi utilizado fila de mensagens (fila pids) para os processos enviem os pids para o shutdown
-   * Foi utilizado memoria compartilhada para a tabela invertida
+4) Foi implementado o LRU para a substituicao de paginas, porem na tabela final eh mostrado o tempo de referencia invertido, ou seja, o menor tempo eh referente a pagina que acabou de ser solicitada e o maior tempo eh da pagina que foi "least recently used".
+__________________________________________________________________________________________________________________________
 
- 
+5)  * Foi utilizado semaforos para bloquear a escrita na tabela invertida, no alocador e no substituidor.
+    * Foi utilizado fila de mensagens (fila 1 e 2) entre alocador e usuario, 
+	 para solicitar a pagina e receber resposta (page fault ou não) , respectivamente.
+    * Foi utilizado fila de mensagens (fila pids) para que os processos enviem seus pids para o shutdown
+    * Foi utilizado memoria compartilhada para a tabela invertida, no alocador, substituidor e no shutdown (para a impressão)
+    * Foi utilizado memoria compartilhada para o vetor de número de page faults e
+	 o numero de execuções do substituidor, para a impressao no shutdown.
+__________________________________________________________________________________________________________________________
