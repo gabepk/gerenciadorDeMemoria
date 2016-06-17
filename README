@@ -42,4 +42,4 @@ ________________________________________________________________________________
     * Foi utilizado memoria compartilhada para a tabela invertida, no alocador, substituidor e no shutdown (para a impressão)
     * Foi utilizado memoria compartilhada para o vetor de número de page faults e
 	 o numero de execuções do substituidor, para a impressao no shutdown.
-__________________________________________________________________________________________________________________________
+_________________________________________________________________________________________________
