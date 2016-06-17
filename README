@@ -5,36 +5,35 @@ Sistemas Operacionais - professora Alba Cristina
    Ubuntu - versao 14.04 LTS
 	  - versao 14.10 (máquina virtual)
    GCC - versao 4.8.4 e 4.9.2
-__________________________________________________________________________________________________________________________
+_________________________________________________________________________________________________
 
 1) Eh necessario rodar na seguinte ordem: alocador -> substituidor -> usuario (1 à 5) -> shutdown
-__________________________________________________________________________________________________________________________
+_________________________________________________________________________________________________
 
-2) Comandos:
-	gcc alocador.c alocador.h -o alocador
-	./alocador
+2) Comandos para executar tudo em backgound (exceto shutdown):
+	
+	chmod 777 compilaTudo.sh
+	./compilaTudo.sh
 
-	gcc substituidor.c substituidor.h -o substituidor
-	./substituidor
+	./alocador & <ENTER>
+	./substituidor & <ENTER>
 
-	gcc usuario.c usuario.h -o usuario
-	./usuario pag_processo_0.txt
-	./usuario pag_processo_1.txt
+	./usuario pag_processo_0.txt & <ENTER>
+	./usuario pag_processo_1.txt & <ENTER>
 		...
-	./usuario pag_processo_5.txt
+	./usuario pag_processo_4.txt & <ENTER>
 
-	gcc shutdown.c shutdown.h -o shutdown
 	./shutdown
-__________________________________________________________________________________________________________________________
+_________________________________________________________________________________________________
 
 3) Assumimos que:
 	* Numero de frames maxima é 10
 	* Numero de usuários maximo é 5
 	* Arquivo texto que acompanha ./usuario deve sempre terminar com um digito antes de ".txt", pois este será seu pid_logico no codigo
-__________________________________________________________________________________________________________________________
+_________________________________________________________________________________________________
 
-4) Foi implementado o LRU para a substituicao de paginas, porem na tabela final eh mostrado o tempo de referencia invertido, ou seja, o menor tempo eh referente a pagina que acabou de ser solicitada e o maior tempo eh da pagina que foi "least recently used".
-__________________________________________________________________________________________________________________________
+4) Foi implementado o NFU para a substituicao de paginas, "Not Frequently Used"
+_________________________________________________________________________________________________
 
 5)  * Foi utilizado semaforos para bloquear a escrita na tabela invertida, no alocador e no substituidor.
     * Foi utilizado fila de mensagens (fila 1 e 2) entre alocador e usuario, 
