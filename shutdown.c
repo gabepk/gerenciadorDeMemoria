@@ -78,11 +78,8 @@ int main ()
 	int i=0, result=1;
 	obtem_estruturas_compartilhadas();
 
-	result = msgrcv(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0, IPC_NOWAIT);
-	while(result > 0) {
+	while((msgrcv(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0, IPC_NOWAIT)) > 0) {
 		kill(msg_fila_pids.pid, SIGUSR1);
-
-		result = msgrcv(fila_pids, &msg_fila_pids, sizeof(msg_fila_pids)-sizeof(long), 0, IPC_NOWAIT);
 	}
 
 	imprime_resultado();

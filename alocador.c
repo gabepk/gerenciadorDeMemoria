@@ -218,6 +218,7 @@ bool aloca_frame(mensagem *msg)
 void executa_alocacao() {
 
 	while (1) {
+		// O quarto argumento é 0, então a primeira msg da fila é lida
 		if ((msgrcv(fila_1, &msg_fila_1, sizeof(msg_fila_1)-sizeof(long), 0, 0)) < 0)
 		{
 			printf("Erro na obtencao da mensagem na fila 1\n");

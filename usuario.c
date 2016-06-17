@@ -108,7 +108,8 @@ int main (int argc, char *argv[]) {
 
 				sleep(3);
 				
-				if ( msgrcv(fila_2, &msg_fila_2, sizeof(msg_fila_2)-sizeof(long), 0, 0) < 0)
+				// Só receberah as mensagens de o tipo (4o argumento) for igual ao pid do usuario
+				if ( msgrcv(fila_2, &msg_fila_2, sizeof(msg_fila_2)-sizeof(long), msg_fila_1.pid, 0) < 0)
 				{
 					printf("Erro na obtencao da mensagem na fila 2\n");
 					exit(1);
