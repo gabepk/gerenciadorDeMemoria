@@ -7,16 +7,26 @@ Simulação de gerenciamento de memória de um sistema operacional utilizando al
 ## Execução em Background
 
 $ cd src
+
 $ chmod 777 compila.sh
+
 $ ./compila.sh
 
+
 $ ./alocador & <ENTER>
+
 $ ./substituidor & <ENTER>
 
+
+
 $ ./usuario paginas/pag_processo_0.txt & <ENTER>
+
 $ ./usuario paginas/pag_processo_1.txt & <ENTER>
+
 ...
+
 $ ./usuario paginas/pag_processo_4.txt & <ENTER>
+
 
 $ ./shutdown
 
@@ -37,9 +47,11 @@ Gerenciamento de memória compartilhada:
 ## Membros
 
 Gabriella de Oliveira Esteves - 110118995
+
 Naiara Watanabe - 090126785
 
 ## Configurações
  
 Ubuntu - versao 14.04 LTS - GCC 4.8.4
+
 MV Ubuntu - versao 14.10 - GCC 4.9.2
