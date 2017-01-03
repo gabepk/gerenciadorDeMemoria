@@ -8,8 +8,8 @@
  *
  */
 
-#include "utils.h"
-#include "substituidor.h"
+#include "../include/utils.h"
+#include "../include/substituidor.h"
 
 void Psem()
 {

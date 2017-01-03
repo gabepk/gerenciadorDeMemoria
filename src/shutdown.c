@@ -8,8 +8,8 @@
  *
  */
 
-#include "utils.h"
-#include "shutdown.h"
+#include "../include/utils.h"
+#include "../include/shutdown.h"
 
 void obtem_estruturas_compartilhadas()
 {

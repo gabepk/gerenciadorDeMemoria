@@ -8,8 +8,8 @@
  *
  */
 
-#include "utils.h"
-#include "usuario.h"
+#include "../include/utils.h"
+#include "../include/usuario.h"
 
 void shutdown_usuario () {
 	exit(1);

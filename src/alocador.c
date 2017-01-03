@@ -8,8 +8,8 @@
  *
  */
 
-#include "utils.h"
-#include "alocador.h"
+#include "../include/utils.h"
+#include "../include/alocador.h"
 
 void Psem()
 {
